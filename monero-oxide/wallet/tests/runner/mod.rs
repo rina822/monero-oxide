@@ -1,3 +1,5 @@
+// テストランナー共通ユーティリティ。
+// - モック RPC の初期化、ブロック生成、テスト用アドレス生成、シーケンシャル実行ヘルパなどを提供します。
 use std_shims::sync::LazyLock;
 
 use zeroize::Zeroizing;
@@ -152,6 +154,9 @@ pub async fn rpc() -> SimpleRequestRpc {
 }
 
 pub(crate) static SEQUENTIAL: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
+
+// `async_sequential!` マクロはテストを逐次実行するためのヘルパです。
+// グローバルロック `SEQUENTIAL` とローカルタスクセットを使って複数テストの並列実行を回避します。
 
 #[macro_export]
 macro_rules! async_sequential {

@@ -13,7 +13,9 @@ use sha3::{Digest, Keccak256};
 
 use monero_io::*;
 
-/// A reduced scalar.
+/// 縮約された（reduced）スカラー。
+///
+/// 英語原文: A reduced scalar.
 #[derive(Clone, Copy, Eq, Debug, Zeroize)]
 pub struct Scalar([u8; 32]);
 
@@ -30,40 +32,37 @@ impl PartialEq for Scalar {
 }
 
 impl Scalar {
-  /// The additive identity.
+  /// 加法単位元（0）。
   pub const ZERO: Self = Self([0; 32]);
-  /// The multiplicative identity.
+  /// 乗法単位元（1）。
   #[rustfmt::skip]
   pub const ONE: Self = Self([
     1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   ]);
-  /// The multiplicative inverse of `8 \mod l`.
+  /// `8 mod l` の逆数（乗法逆元）。
   ///
-  /// `l` is defined as the largest prime factor in the amount of points on the Ed25519 elliptic
-  /// curve.
-  ///
-  /// This is useful as part of clearing terms belonging to a small-order subgroup from within a
-  /// point.
+  /// 補足: `l` は Ed25519 曲線上の点の個数に含まれる大きな素因子です。
+  /// 小位数部分（small-order subgroup）を除去する操作で利用されます。
   #[rustfmt::skip]
   pub const INV_EIGHT: Self = Self([
     121,  47, 220, 226,  41, 229,   6,  97, 208, 218,  28, 125, 179, 157, 211,   7,
       0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   6,
     ]);
 
-  /// Write a Scalar.
+  /// `Scalar` をバイト列として書き出します。
   ///
-  /// This may run in variable time.
+  /// 補足: この操作は可変時間で実行される可能性があります。
   pub fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
     w.write_all(&self.0)
   }
 
-  /// Read a canonically-encoded scalar.
+  /// 正準的にエンコードされたスカラーを読み込みます。
   ///
-  /// Some scalars within the Monero protocol are not enforced to be canonically encoded. For such
-  /// scalars, they should be represented as `[u8; 32]` and later converted to scalars as relevant.
+  /// 補足: Monero プロトコルでは一部スカラーが正準表現でない場合があるため、
+  /// その場合は `[u8; 32]` として扱い、必要時にスカラーに変換すべきです。
   ///
-  /// This may run in variable time.
+  /// 注意: この操作は可変時間です。
   pub fn read<R: Read>(r: &mut R) -> io::Result<Scalar> {
     let bytes = read_bytes(r)?;
     Option::<curve25519_dalek::Scalar>::from(curve25519_dalek::Scalar::from_canonical_bytes(bytes))
@@ -71,9 +70,9 @@ impl Scalar {
     Ok(Self(bytes))
   }
 
-  /// Create a `Scalar` from a `curve25519_dalek::Scalar`.
+  /// `curve25519_dalek::Scalar` から `Scalar` を生成します（内部用）。
   ///
-  /// This is not a public function as it is not part of our API commitment.
+  /// 補足: API 公約外のため公開していません。
   #[doc(hidden)]
   pub fn from(scalar: curve25519_dalek::Scalar) -> Self {
     Self(scalar.to_bytes())
@@ -88,9 +87,9 @@ impl Scalar {
       .expect("`Scalar` instantiated with invalid contents")
   }
 
-  /// Sample a uniform `Scalar` from an RNG.
+  /// RNG から一様なスカラーをサンプリングします（内部用）。
   ///
-  /// This is hidden as it is not part of our API commitment. No guarantees are made for it.
+  /// 補足: API 公約外のため公開していません。
   #[doc(hidden)]
   pub fn random(rng: &mut (impl RngCore + CryptoRng)) -> Self {
     let mut raw = Zeroizing::new([0; 64]);
@@ -98,12 +97,10 @@ impl Scalar {
     Self(Zeroizing::new(curve25519_dalek::Scalar::from_bytes_mod_order_wide(&raw)).to_bytes())
   }
 
-  /// Sample a scalar via hash function.
+  /// ハッシュ関数からスカラーを導出します（`keccak256(data) % l`）。
   ///
-  /// The implementation of this is `keccak256(data) % l`, where `l` is the largest prime factor in
-  /// the amount of points on the Ed25519 elliptic curve. Notably, this is not a wide reduction.
-  ///
-  /// This function panics if it finds a Keccak-256 preimage for an encoding of a multiple of `l`.
+  /// 補足: これはワイドリダクションではありません。極めて稀なケースで `l` の倍数に一致する
+  /// 事象が見つかった場合はパニックします（実装上の判断）。
   pub fn hash(data: impl AsRef<[u8]>) -> Self {
     let scalar =
       curve25519_dalek::Scalar::from_bytes_mod_order(Keccak256::digest(data.as_ref()).into());

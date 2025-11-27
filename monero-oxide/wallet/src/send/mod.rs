@@ -35,6 +35,11 @@ use crate::{
   ViewPair, GuaranteedViewPair, OutputWithDecoys,
 };
 
+// `send` モジュールはウォレットからトランザクションを構築・署名・送信するための
+// 主要ロジックを収めています。ここにはキー派生、出力選択、CLSAG/Bulletproof の生成、
+// マルチシグ FROST 統合などが含まれています。複雑な処理が多いため、各サブモジュールに
+// 機能を分割して実装しています。
+
 mod tx_keys;
 pub use tx_keys::TransactionKeys;
 mod tx;

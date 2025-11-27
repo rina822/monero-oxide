@@ -11,13 +11,12 @@ use monero_io::*;
 
 use crate::Scalar;
 
-/// An unreduced scalar.
+/// 非縮約（unreduced）スカラー。
 ///
-/// While most of modern Monero enforces scalars be reduced, certain legacy parts of the code did
-/// not. These section can generally simply be read as a scalar/reduced into a scalar when the time
-/// comes, yet a couple have non-standard reductions performed.
+/// 補足: 現代の Monero ではほとんどのスカラーが縮約（reduced）されますが、レガシーな箇所では
+/// そうでないことがありました。本構造体は変換を遅延させ、必要に応じて非標準の還元を行います。
 ///
-/// This struct delays scalar conversions and offers the non-standard reduction.
+/// 英語原文: An unreduced scalar. This struct delays scalar conversions and offers the non-standard reduction.
 #[derive(Clone, Copy, Eq, Debug, Zeroize)]
 pub struct UnreducedScalar([u8; 32]);
 
@@ -34,12 +33,12 @@ impl PartialEq for UnreducedScalar {
 }
 
 impl UnreducedScalar {
-  /// Read an UnreducedScalar.
+  /// `UnreducedScalar` を読み込みます（バイナリ）。
   pub fn read<R: Read>(r: &mut R) -> io::Result<UnreducedScalar> {
     Ok(UnreducedScalar(read_bytes(r)?))
   }
 
-  /// Write an UnreducedScalar.
+  /// `UnreducedScalar` を書き出します（バイナリ）。
   pub fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
     w.write_all(&self.0)
   }
@@ -55,12 +54,12 @@ impl UnreducedScalar {
     bits
   }
 
-  // Computes the non-adjacent form of this scalar with width 5.
+  // 幅 5 の非隣接表現（NAF: non-adjacent form）を計算します。
   //
-  // This matches Monero's `slide` function and intentionally gives incorrect outputs under
-  // certain conditions in order to match Monero.
+  // 補足: これは Monero の `slide` 関数と同等であり、Monero と一致させるために特定条件下で
+  // 正しくない出力を返す場合があります。
   //
-  // This function does not execute in constant time and must only be used with public data.
+  // 注意: 定数時間ではなく、公開データでのみ使用してください。
   fn non_adjacent_form(&self) -> [i8; 256] {
     let bits = self.as_bits();
     let mut naf = [0i8; 256];
@@ -113,16 +112,14 @@ impl UnreducedScalar {
     naf
   }
 
-  /// Recover the scalar that an array of bytes was incorrectly interpreted as by ref10's `slide`
-  /// function (as used by the reference Monero implementation in C++).
+  /// ref10 の `slide` 関数によって誤って解釈されたスカラーを復元します（Monero 参照実装に合わせるため）。
   ///
-  /// For Borromean range proofs, Monero did not check the scalars used were reduced. This led to
-  /// some scalars serialized being interpreted as distinct scalars. This function recovers these
-  /// distinct scalars, as required to verify Borromean range proofs within the Monero protocol.
+  /// 補足: Borromean 範囲証明において、Monero は使用されたスカラーが縮約されているかを確認していなかったため、
+  /// シリアライズされた一部スカラーが別の値として扱われました。本関数はそれらを復元し、証明の検証に必要です。
   ///
-  /// See <https://github.com/monero-project/monero/issues/8438> for more info.
-  //
-  /// This function does not execute in constant time and must only be used with public data.
+  /// 参考: <https://github.com/monero-project/monero/issues/8438>
+  ///
+  /// 注意: 定数時間ではなく、公開データでのみ使用してください。
   pub fn ref10_slide_scalar_vartime(&self) -> Scalar {
     use curve25519_dalek::Scalar as DScalar;
 

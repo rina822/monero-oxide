@@ -30,68 +30,100 @@ use monero_oxide::{
 };
 use monero_address::Address;
 
-// Number of blocks the fee estimate will be valid for
-// https://github.com/monero-project/monero/blob/94e67bf96bbc010241f29ada6abc89f49a81759c
-//   /src/wallet/wallet2.cpp#L121
+/// 手数料推定が有効と見なされるブロック数。
+///
+/// 英語原文: Number of blocks the fee estimate will be valid for
+/// 参考: https://github.com/monero-project/monero/blob/94e67bf96bbc010241f29ada6abc89f49a81759c/src/wallet/wallet2.cpp#L121
 const GRACE_BLOCKS_FOR_FEE_ESTIMATE: u64 = 10;
 
-// Monero errors if more than 100 is requested unless using a non-restricted RPC
-// https://github.com/monero-project/monero/blob/cc73fe71162d564ffda8e549b79a350bca53c454
-//   /src/rpc/core_rpc_server.cpp#L75
+/// Monero が 100 件以上のトランザクション要求を拒否する閾値。
+///
+/// 英語原文: Monero errors if more than 100 is requested unless using a non-restricted RPC
+/// 参考: https://github.com/monero-project/monero/blob/cc73fe71162d564ffda8e549b79a350bca53c454/src/rpc/core_rpc_server.cpp#L75
 const TXS_PER_REQUEST: usize = 100;
 
-/// An error from the RPC.
+/// RPC から返されるエラー。
+///
+/// 英語原文: An error from the RPC.
 #[derive(Clone, PartialEq, Eq, Debug, thiserror::Error)]
 pub enum RpcError {
-  /// An internal error.
+  /// 内部エラー。
+  ///
+  /// 英語原文: An internal error.
   #[error("internal error ({0})")]
   InternalError(String),
-  /// A connection error with the node.
+  /// ノードとの接続エラー。
+  ///
+  /// 英語原文: A connection error with the node.
   #[error("connection error ({0})")]
   ConnectionError(String),
-  /// The node is invalid per the expected protocol.
+  /// ノードが期待されるプロトコルに従っていない（無効）場合のエラー。
+  ///
+  /// 英語原文: The node is invalid per the expected protocol.
   #[error("invalid node ({0})")]
   InvalidNode(String),
-  /// Requested transactions weren't found.
+  /// 要求したトランザクションが見つからなかった場合のエラー。
+  ///
+  /// 英語原文: Requested transactions weren't found.
   #[error("transactions not found")]
   TransactionsNotFound(Vec<[u8; 32]>),
-  /// The transaction was pruned.
+  /// トランザクションがプルーニングされていた場合のエラー。
   ///
-  /// Pruned transactions are not supported at this time.
+  /// 補足: 現時点ではプルーニング済みトランザクションはサポートされていません。
   #[error("pruned transaction")]
   PrunedTransaction,
-  /// A transaction (sent or received) was invalid.
+  /// 無効なトランザクション（送信または受信）の場合のエラー。
+  ///
+  /// 英語原文: A transaction (sent or received) was invalid.
   #[error("invalid transaction ({0:?})")]
   InvalidTransaction([u8; 32]),
-  /// The returned fee was unusable.
+  /// 返却された手数料情報が使用不能だった場合のエラー。
+  ///
+  /// 英語原文: The returned fee was unusable.
   #[error("unexpected fee response")]
   InvalidFee,
-  /// The priority intended for use wasn't usable.
+  /// 指定した優先度が使用できなかった場合のエラー。
+  ///
+  /// 英語原文: The priority intended for use wasn't usable.
   #[error("invalid priority")]
   InvalidPriority,
 }
 
-/// A block which is able to be scanned.
+/// スキャン可能なブロックを表す構造体。
+///
+/// 英語原文: A block which is able to be scanned.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct ScannableBlock {
-  /// The block which is being scanned.
-  pub block: Block,
-  /// The non-miner transactions within this block.
-  pub transactions: Vec<Transaction<Pruned>>,
-  /// The output index for the first RingCT output within this block.
+  /// スキャン対象のブロック本体。
   ///
-  /// None if there are no RingCT outputs within this block, Some otherwise.
+  /// 英語原文: The block which is being scanned.
+  pub block: Block,
+  /// ブロックに含まれる非マイナー（通常）トランザクションの一覧。
+  ///
+  /// 英語原文: The non-miner transactions within this block.
+  pub transactions: Vec<Transaction<Pruned>>,
+  /// このブロック内で最初の RingCT 出力が始まる出力インデックス。
+  ///
+  /// 補足: RingCT 出力が存在しない場合は `None`、存在する場合は `Some` を返します。
+  /// 英語原文: The output index for the first RingCT output within this block.
   pub output_index_for_first_ringct_output: Option<u64>,
 }
 
-/// A struct containing a fee rate.
+/// 手数料レートを表す構造体。
 ///
-/// The fee rate is defined as a per-weight cost, along with a mask for rounding purposes.
+/// 手数料レートはトランザクションの重み当たりの単価 (`per_weight`) と、
+/// 切り上げ／切り捨てのためのマスク (`mask`) から構成されます。
+///
+/// 英語原文: The fee rate is defined as a per-weight cost, along with a mask for rounding purposes.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Zeroize)]
 pub struct FeeRate {
-  /// The fee per-weight of the transaction.
+  /// トランザクション重み当たりの手数料。
+  ///
+  /// 英語原文: The fee per-weight of the transaction.
   per_weight: u64,
-  /// The mask to round with.
+  /// 切り上げ／切り下げに使うマスク。
+  ///
+  /// 英語原文: The mask to round with.
   mask: u64,
 }
 
@@ -156,23 +188,37 @@ impl FeeRate {
   }
 }
 
-/// The priority for the fee.
+/// 手数料優先度を表します。
 ///
-/// Higher-priority transactions will be included in blocks earlier.
+/// 優先度が高いトランザクションはより早くブロックに取り込まれます。
+///
+/// 英語原文: Higher-priority transactions will be included in blocks earlier.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[allow(non_camel_case_types)]
 pub enum FeePriority {
-  /// The `Unimportant` priority, as defined by Monero.
+  /// Monero で定義される `Unimportant` 優先度。
+  ///
+  /// 英語原文: The `Unimportant` priority, as defined by Monero.
   Unimportant,
-  /// The `Normal` priority, as defined by Monero.
+  /// Monero で定義される `Normal` 優先度。
+  ///
+  /// 英語原文: The `Normal` priority, as defined by Monero.
   Normal,
-  /// The `Elevated` priority, as defined by Monero.
+  /// Monero で定義される `Elevated` 優先度。
+  ///
+  /// 英語原文: The `Elevated` priority, as defined by Monero.
   Elevated,
-  /// The `Priority` priority, as defined by Monero.
+  /// Monero で定義される `Priority` 優先度。
+  ///
+  /// 英語原文: The `Priority` priority, as defined by Monero.
   Priority,
-  /// A custom priority.
+  /// カスタム優先度。
+  ///
+  /// 英語原文: A custom priority.
   Custom {
-    /// The numeric representation of the priority, as used within the RPC.
+    /// RPC 内で使用される数値表現の優先度。
+    ///
+    /// 英語原文: The numeric representation of the priority, as used within the RPC.
     priority: u32,
   },
 }
@@ -209,23 +255,28 @@ struct TransactionsResponse {
   txs: Vec<TransactionResponse>,
 }
 
-/// The response to an query for the information of a RingCT output.
+/// RingCT 出力の情報を問い合わせた際の応答を表します。
+///
+/// 英語原文: The response to an query for the information of a RingCT output.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct OutputInformation {
-  /// The block number of the block this output was added to the chain in.
+  /// この出力がチェーンに追加されたブロックのブロック番号（高さ）。
   ///
-  /// This is equivalent to he height of the blockchain at the time the block was added.
+  /// 補足: ブロックが追加された時点でのブロックチェーンの高さと同等です。
   pub height: usize,
-  /// If the output is unlocked, per the node's local view.
-  pub unlocked: bool,
-  /// The output's key.
+  /// ノードのローカルビューに基づくアンロック状態。
   ///
-  /// This is a `CompressedPoint`, not a `Point`, as it may be invalid. `CompressedPoint`
-  /// only asserts validity on decompression and allows representing compressed types.
+  /// 英語原文: If the output is unlocked, per the node's local view.
+  pub unlocked: bool,
+  /// 出力のキー。
+  ///
+  /// 補足: これは `Point` ではなく `CompressedPoint` で表現されています。
+  /// `CompressedPoint` は展開（decompress）時に妥当性を検証するため、
+  /// 無効な圧縮表現も保持できる点で `Point` と異なります。
   pub key: CompressedPoint,
-  /// The output's commitment.
+  /// 出力のコミットメント（Pedersen commitment）。
   pub commitment: Point,
-  /// The transaction which created this output.
+  /// この出力を作成したトランザクションのハッシュ。
   pub transaction: [u8; 32],
 }
 
@@ -233,9 +284,17 @@ fn rpc_hex(value: &str) -> Result<Vec<u8>, RpcError> {
   hex::decode(value).map_err(|_| RpcError::InvalidNode("expected hex wasn't hex".to_string()))
 }
 
+/// 文字列として渡された16進表現をデコードしてバイト列に変換します。
+///
+/// 英語原文: helper to decode RPC hex strings into bytes.
+
 fn hash_hex(hash: &str) -> Result<[u8; 32], RpcError> {
   rpc_hex(hash)?.try_into().map_err(|_| RpcError::InvalidNode("hash wasn't 32-bytes".to_string()))
 }
+
+/// 16進表現のハッシュ文字列を `[u8; 32]` に変換します。
+///
+/// 英語原文: helper to convert hex hash into 32-byte array.
 
 fn rpc_point(point: &str) -> Result<Point, RpcError> {
   CompressedPoint::from(
@@ -246,6 +305,10 @@ fn rpc_point(point: &str) -> Result<Point, RpcError> {
   .ok_or_else(|| RpcError::InvalidNode(format!("invalid point: {point}")))
 }
 
+/// RPC から渡された圧縮点（16進文字列）を `Point` に復元（decompress）します。
+///
+/// 英語原文: helper to parse a point from RPC-provided hex string and decompress it.
+
 /// An RPC connection to a Monero daemon.
 ///
 /// This is abstract such that users can use an HTTP library (which being their choice), a
@@ -255,6 +318,12 @@ fn rpc_point(point: &str) -> Result<Point, RpcError> {
 ///   https://github.com/monero-oxide/monero-oxide/tree/main/monero-oxide/rpc/simple-request
 /// ) is recommended.
 pub trait Rpc: Sync + Clone {
+  /// Monero デーモンへの RPC 接続を抽象化するトレイト。
+  ///
+  /// 実装者は任意の POST 実装（HTTP クライアント、Tor 経由、テスト用のメモリバッファ等）を
+  /// 提供できます。ライブラリは実装の詳細に依存しません。
+  ///
+  /// 英語原文: An RPC connection to a Monero daemon. This is abstract such that users can use an HTTP library, Tor/i2p, or memory buffer.
   /// Perform a POST request to the specified route with the specified body.
   ///
   /// The implementor is left to handle anything such as authentication.

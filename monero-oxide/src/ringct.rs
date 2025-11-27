@@ -1,3 +1,5 @@
+// RingCT（リング機構を用いた機密トランザクション）関連の型とシリアライゼーション。
+// このファイルは暗号証明（MLSAG/CLSAG/Bulletproof 等）とそれに付随するデータ構造を扱います。
 #[allow(unused_imports)]
 use std_shims::prelude::*;
 use std_shims::io::{self, Read, Write};
@@ -15,19 +17,21 @@ use crate::{
   ringct::{mlsag::Mlsag, clsag::Clsag, borromean::BorromeanRange, bulletproofs::Bulletproof},
 };
 
-/// An encrypted amount.
+/// 暗号化された金額表現。
+///
+/// 旧来の `Original` フォーマットと、省略形の `Compact` がある。復号方法は RctType に依存する。
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum EncryptedAmount {
-  /// The original format for encrypted amounts.
+  /// 元の（冗長な）フォーマット。マスクとスカラー表現の暗号化データを含む。
   Original {
-    /// A mask used with a mask derived from the shared secret to encrypt the amount.
+    /// 共有秘密から派生したマスクと組み合わせるためのマスク
     mask: [u8; 32],
-    /// The amount, as a scalar, encrypted.
+    /// 暗号化されたスカラーとしての金額
     amount: [u8; 32],
   },
-  /// The "compact" format for encrypted amounts.
+  /// コンパクト形式。暗号化された u64 を含む。
   Compact {
-    /// The amount, as a u64, encrypted.
+    /// 暗号化された u64（8 バイト）
     amount: [u8; 8],
   },
 }
@@ -54,7 +58,7 @@ impl EncryptedAmount {
   }
 }
 
-/// The type of the RingCT data.
+/// RingCT データの種類（どの証明フォーマットを使うか）を表す列挙型。
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Zeroize)]
 pub enum RctType {
   /// One MLSAG for multiple inputs and Borromean range proofs.
@@ -149,24 +153,19 @@ impl RctType {
   }
 }
 
-/// The base of the RingCT data.
+/// RingCT のベースデータ（証明を除く）。
 ///
-/// This excludes all proofs (which once initially verified do not need to be kept around) and
-/// solely keeps data which either impacts the effects of the transactions or is needed to scan it.
-///
-/// The one exception for this is `pseudo_outs`, which was originally present here yet moved to
-/// RctPrunable in a later hard fork (causing it to be present in both).
+/// 証明部分は検証後には保持する必要がないため、ここではトランザクションの効果に必要な
+/// 最小限のデータのみを保持します（ただし一部のフィールドはフォークにより配置が変わる）。
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct RctBase {
-  /// The fee used by this transaction.
+  /// トランザクションで支払われた手数料
   pub fee: u64,
-  /// The re-randomized amount commitments used within inputs.
-  ///
-  /// This field was deprecated and is empty for modern RctTypes.
+  /// 再ランダマイズされた入力のコミットメント（古いフォーマットで使用、現代の型では空）
   pub pseudo_outs: Vec<CompressedPoint>,
-  /// The encrypted amounts for the recipients to decrypt.
+  /// 受取側が復号するための暗号化された金額群
   pub encrypted_amounts: Vec<EncryptedAmount>,
-  /// The output commitments.
+  /// 出力コミットメント
   pub commitments: Vec<CompressedPoint>,
 }
 
@@ -237,7 +236,7 @@ impl RctBase {
   }
 }
 
-/// The prunable part of the RingCT data.
+/// 削除可能（prunable）な RingCT 部分。大きな証明を含み、必要に応じて破棄できる。
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum RctPrunable {
   /// An aggregate MLSAG with Borromean range proofs.
@@ -405,16 +404,14 @@ impl RctPrunable {
   }
 }
 
-/// The RingCT proofs.
+/// RingCT の証明全体（ベース + プルーナブル）。
 ///
-/// This contains both the RctBase and RctPrunable structs.
-///
-/// The C++ codebase refers to this as rct_signatures.
+/// C++ 実装では `rct_signatures` と呼ばれる構造体に相当します。
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct RctProofs {
-  /// The data necessary for handling this transaction.
+  /// トランザクション処理に必要なデータ
   pub base: RctBase,
-  /// The data necessary for verifying this transaction.
+  /// 検証に必要な（場合によっては破棄可能な）データ
   pub prunable: RctPrunable,
 }
 

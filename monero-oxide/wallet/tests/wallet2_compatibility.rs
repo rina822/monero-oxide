@@ -1,3 +1,6 @@
+// このファイルは既存の wallet RPC との相互運用性を確認するテスト群です。
+// - wallet RPC からの送信をデーモンへ送って自身で受け取れるか
+// - 統合アドレスやサブアドレス、PaymentId の伝搬を検証します。
 use rand_core::{OsRng, RngCore};
 
 use serde::Deserialize;

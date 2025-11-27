@@ -1,3 +1,7 @@
+
+// このモジュールは、送金で使用するデコイ（リングメンバー）を RPC 経由で取得・選択するロジックを実装します。
+// Monero のプライバシー特性を保つため、出力のランダム選択（ガンマ分布に基づく）や
+// ブロック分布の扱い、デコイの検証（アンロック状態やトーションの除去等）を行います。
 use std_shims::{io, vec::Vec, string::ToString, collections::HashSet};
 
 use zeroize::{Zeroize, ZeroizeOnDrop};
@@ -29,6 +33,9 @@ async fn select_n(
   ring_len: u8,
   fingerprintable_deterministic: bool,
 ) -> Result<Vec<(u64, [Point; 2])>, RpcError> {
+  // `select_n` は実際に RPC から候補インデックスを取り、対応する出力の鍵とコミットメントを返す。
+  // 内部でガンマ分布に基づいて「年齢」をサンプルし、その年齢 -> 出力インデックスへの変換を行う。
+  // 接続エラーや不整合検出時に適切にエラーを返し、呼び出し側で再試行が可能。
   if height < DEFAULT_LOCK_WINDOW {
     Err(RpcError::InternalError("not enough blocks to select decoys".to_string()))?;
   }

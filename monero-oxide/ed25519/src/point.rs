@@ -5,7 +5,9 @@ use sha3::{Digest, Keccak256};
 
 use crate::CompressedPoint;
 
-/// A decompressed point on the Ed25519 elliptic curve.
+/// 展開された（非圧縮）Ed25519 上の点。
+///
+/// 英語原文: A decompressed point on the Ed25519 elliptic curve.
 #[derive(Clone, Copy, Eq, Debug, Zeroize)]
 pub struct Point(curve25519_dalek::EdwardsPoint);
 
@@ -29,9 +31,9 @@ impl PartialEq for Point {
 }
 
 impl Point {
-  /// Sample a biased point via a hash function.
+  /// ハッシュ関数からバイアスされた点をサンプリングします（Monero の `hash_to_ec` 相当）。
   ///
-  /// This is comparable to Monero's `hash_to_ec` function.
+  /// 英語原文: Sample a biased point via a hash function.
   ///
   /// This achieves parity with https://github.com/monero-project/monero
   ///   /blob/389e3ba1df4a6df4c8f9d116aa239d4c00f5bc78/src/crypto/crypto.cpp#L611, inlining the
@@ -145,30 +147,32 @@ impl Point {
     Self::from(res.mul_by_cofactor())
   }
 
-  /// Compress a point to a `CompressedPoint`.
+  /// 点を圧縮して `CompressedPoint` に変換します。
+  ///
+  /// 英語原文: Compress a point to a `CompressedPoint`.
   pub fn compress(self) -> CompressedPoint {
     CompressedPoint::from(self.0.compress().to_bytes())
   }
 
-  /// Create a `Point` from a `curve25519_dalek::EdwardsPoint`.
+  /// `curve25519_dalek::EdwardsPoint` から `Point` を生成します（内部用）。
   ///
-  /// This is hidden as it is not part of our API commitment. No guarantees are made for it.
+  /// 補足: API 公約の外側のため公開していません。
   #[doc(hidden)]
   pub fn from(point: curve25519_dalek::EdwardsPoint) -> Self {
     Self(point)
   }
 
-  /// Create a `curve25519_dalek::EdwardsPoint` from a `Point`.
+  /// `Point` から `curve25519_dalek::EdwardsPoint` を取り出します（内部用）。
   ///
-  /// This is hidden as it is not part of our API commitment. No guarantees are made for it.
+  /// 補足: API 公約の外側のため公開していません。
   #[doc(hidden)]
   pub fn into(self) -> curve25519_dalek::EdwardsPoint {
     self.0
   }
 
-  /// Interpret a point as a key image.
+  /// 点をキーイメージとして解釈します（条件付きで `Some` を返す）。
   ///
-  /// This is hidden as it is not part of our API commitment. No guarantees are made for it.
+  /// 補足: API 公約外のため公開していません。点が単位元またはトーションを含む場合 `None` を返します。
   #[doc(hidden)]
   pub fn key_image(self) -> Option<curve25519_dalek::EdwardsPoint> {
     use curve25519_dalek::traits::IsIdentity;

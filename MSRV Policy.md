@@ -1,10 +1,5 @@
-# MSRV Policy
+# MSRV ポリシー
 
-monero-oxide officially tracks the latest stable Rust version there's merit to
-track. Where possible, `std-shims` (primarily used to provide alternatives to
-members of `std` on `no-std` environments) may provide polyfills so
-monero-oxide may use modern features without actually bumping its MSRV.
+monero-oxide は、追跡する価値がある最新の安定版 Rust バージョンを公式に追跡します。可能な場合、`std-shims`（主に `no-std` 環境で `std` の代替を提供するために使用される）はポリフィルを提供し、実際に MSRV を引き上げずにモダンな機能を使用できるようにすることがあります。
 
-Any polyfills provided by `std-shims` are not recommended for usage. They will
-presumably be much more inefficient and will receive a fraction of the testing.
-Only the targeted Rust version is officially supported.
+`std-shims` によるポリフィルの使用は推奨されません。これらは通常より非効率であり、テストの量も限られます。公式にサポートされるのは対象とする Rust バージョンのみです。

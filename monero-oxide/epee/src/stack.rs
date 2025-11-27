@@ -1,11 +1,11 @@
-//! A non-allocating alternative to `Vec`, used to track the state of an EPEE decoder.
+//! 非ヒープ割当ての代替スタック（`Vec` の代替）。EPEE デコーダの状態管理に使用します。
 //!
-//! This is only possible due to bounding the depth of objects we decode, which we are able to do
-//! with complete correctness due to EPEE defining a maximum depth of just `100`. This limit is
-//! also sufficiently small as to make this not only feasible yet performant, with the stack taking
-//! less than a kibibyte (even on 64-bit platforms).
+//! EPEE のオブジェクト深さが最大 100 に限定されている特性を利用して、深さに依存する
+//! 固定配列で状態を管理します。これによりヒープ割当てを回避し、非常に小さいメモリ
+//! フットプリント（kibibyte 未満）で動作させられます。
 //!
-//! This code is internal to `monero-epee` yet is still written not to panic in any case.
+//! このモジュールはライブラリ内部実装向けであり、パニックを発生させないよう慎重に
+//! 書かれています。
 
 /*
   Introducing `NonZero` bumped us from a MSRV of Rust 1.60 to Rust 1.79. We have no incentive to
@@ -106,15 +106,17 @@ const _ASSERT_KIBIBYTE_STACK: [(); 1024 - core::mem::size_of::<Stack>()] =
   [(); 1024 - core::mem::size_of::<Stack>()];
 
 impl Stack {
-  /// Create a new stack to use with decoding the root object.
-  #[inline(always)]
-  pub(crate) fn root_object() -> Self {
-    /*
-      Zero-initialize the arrays.
+    /// ルートオブジェクト用の新しいスタックを作成する。
+    ///
+    /// 内部で固定長配列をゼロ初期化し、`amounts` は `NonZero::MIN` を使って非ゼロ化している。
+    #[inline(always)]
+    pub(crate) fn root_object() -> Self {
+      /*
+        配列をゼロ初期化する。
 
-      Because we require `amounts` to be non-zero, we use `NonZero::MIN`. Alternatively, we'd need
-      to use `unsafe` for the uninitialized memory.
-    */
+        `amounts` は非ゼロである必要があるため `NonZero::MIN` を用いる設計にしている。
+        生ポインタや `unsafe` を使う代替設計も考えられるが、ここでは安全実装を優先している。
+      */
     let mut types = PackedTypes([0; MAX_OBJECT_DEPTH.div_ceil(2)]);
     let mut amounts = [NonZero::<usize>::MIN; MAX_OBJECT_DEPTH];
 
@@ -124,50 +126,54 @@ impl Stack {
     Self { types, amounts, depth: 1 }
   }
 
-  /// The current stack depth.
+  /// 現在のスタック深さを返す（`Vec::len` 相当）。
   #[inline(always)]
   pub(crate) fn depth(&self) -> usize {
     usize::from(self.depth)
   }
 
-  /// Peek the current item on the stack.
+  /// スタックの先頭（現在処理中の項目）を覗く。存在しない場合は `None` を返す。
   #[inline(always)]
   pub(crate) fn peek(&self) -> Option<(TypeOrEntry, NonZero<usize>)> {
     let i = self.depth().checked_sub(1)?;
     Some((self.types.get(i), self.amounts[i]))
   }
 
-  /// Pop the next item from the stack.
+  /// スタックから次の項目をポップする。
+  ///
+  /// `amounts` をデクリメントし、0 になれば深さを一段下げる（そのスロットは次に上書きされる）。
   pub(crate) fn pop(&mut self) -> Option<TypeOrEntry> {
     let i = self.depth().checked_sub(1)?;
 
     let kind = self.types.get(i);
 
-    // This will not panic as `amount` is unsigned and non-zero.
+    // `amounts[i]` は非ゼロなので安全にデクリメント可能
     let amount = self.amounts[i].get() - 1;
     if let Some(amount) = NonZero::new(amount) {
       self.amounts[i] = amount;
     } else {
-      // This will not panic as we know depth can have `1` subtracted.
+      // 残数がなくなれば深さを減らす
       self.depth -= 1;
     }
 
     Some(kind)
   }
 
-  /// Push an item onto the stack.
+  /// スタックに項目をプッシュする。
+  ///
+  /// `amount` はそのレベル内に残る要素数を表す（0 の場合は即座に何もしない）。
   pub(crate) fn push(&mut self, kind: TypeOrEntry, amount: usize) -> Result<(), EpeeError> {
-    // Assert the maximum depth for an object
+    // 深さの上限を超えるとエラー
     if self.depth() == MAX_OBJECT_DEPTH {
       Err(EpeeError::DepthLimitExceeded)?;
     }
 
     let Some(amount) = NonZero::new(amount) else {
-      // If we have nothing to decode, immediately return
+      // デコードする要素が無ければ早期リターン
       return Ok(());
     };
 
-    // These will not panic due to our depth check at the start of the function
+    // 深さチェック済みなので安全に書き込む
     self.types.set(self.depth(), kind);
     self.amounts[self.depth()] = amount;
     self.depth += 1;

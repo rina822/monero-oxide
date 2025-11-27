@@ -1,3 +1,4 @@
+// ブロック関連の型とシリアライゼーション。
 use std_shims::{
   vec,
   vec::Vec,
@@ -11,30 +12,27 @@ use crate::{
   transaction::{Input, Transaction},
 };
 
+// 特定ブロック (#202,612) のハッシュ差分に関する既知の値（テスト・歴史的一致性用）
 pub(crate) const CORRECT_BLOCK_HASH_202612: [u8; 32] =
   hex_literal::hex!("426d16cff04c71f8b16340b722dc4010a2dd3831c22041431f772547ba6e331a");
 pub(crate) const EXISTING_BLOCK_HASH_202612: [u8; 32] =
   hex_literal::hex!("bbd604d2ba11ba27935e006ed39c9bfdd99b76bf4a50654bc1e1e61217962698");
 
-/// A Monero block's header.
+/// ブロックヘッダ。
+///
+/// `hardfork_version` / `hardfork_signal` はそれぞれ C++ 実装での `major_version` /
+/// `minor_version` に相当します。
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct BlockHeader {
-  /// The hard fork of the protocol this block follows.
-  ///
-  /// Per the C++ codebase, this is the `major_version`.
+  /// 適用されるハードフォークのメジャーバージョン
   pub hardfork_version: u8,
-  /// A signal for a proposed hard fork.
-  ///
-  /// Per the C++ codebase, this is the `minor_version`.
+  /// ハードフォークのマイナーバージョン（提案信号）
   pub hardfork_signal: u8,
-  /// Seconds since the epoch.
+  /// UNIX 時刻（秒）
   pub timestamp: u64,
-  /// The previous block's hash.
+  /// 直前ブロックのハッシュ
   pub previous: [u8; 32],
-  /// The nonce used to mine the block.
-  ///
-  /// Miners should increment this while attempting to find a block with a hash satisfying the PoW
-  /// rules.
+  /// 採掘に使われるノンス（PoW 試行でインクリメントされる）
   pub nonce: u32,
 }
 

@@ -25,6 +25,8 @@ pub enum Input {
     /// The decoys used by this input's ring, specified as their offset distance from each other.
     key_offsets: Vec<u64>,
     /// The key image (linking tag, nullifer) for the spent output.
+    // トランザクション関連の型とシリアライゼーション。
+    // このファイルは Monero の取引表現（Input/Output/Timelock/Transaction 等）を提供します。
     key_image: CompressedPoint,
   },
 }

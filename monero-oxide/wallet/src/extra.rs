@@ -1,3 +1,5 @@
+// このモジュールはトランザクションの `extra` フィールドの読み書き・解析を提供します。
+// `extra` は Monero のトランザクションに含まれる任意の拡張情報（キー、nonce、マイニング情報等）を表します。
 use core::ops::BitXor;
 use std_shims::{
   vec,
@@ -86,6 +88,9 @@ impl PaymentId {
     })
   }
 }
+
+// 以下は `extra` の各種フィールドと補助関数群です。
+// これらは `Extra` 構造体を通じて、トランザクションの追加情報を安全に読み書きするために使用されます。
 
 /// A field within the TX extra.
 #[derive(Clone, PartialEq, Eq, Debug, Zeroize)]

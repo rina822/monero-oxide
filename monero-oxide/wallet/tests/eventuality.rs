@@ -1,3 +1,6 @@
+// このファイルは `Eventuality` 型の直列化・復元および TX との照合ロジックを検証します。
+// Eventuality は送信予定のトランザクションの「期待される要素」を保持し、
+// 実際のチェーン上のトランザクションがそれにマッチするかを判定します。
 use curve25519_dalek::constants::ED25519_BASEPOINT_POINT;
 
 use monero_oxide::transaction::Transaction;
@@ -8,6 +11,7 @@ use monero_wallet::{
 
 mod runner;
 
+// eventuality テストは、Eventuality の serialize/read と matches の振る舞いを確認します
 test!(
   eventuality,
   (

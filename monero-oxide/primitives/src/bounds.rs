@@ -1,58 +1,54 @@
 /*
-  These structs exist just to consolidate documentation. We define these bounds in several places
-  and copying these docstrings would be very annoying.
+  ドキュメントをまとめるためだけに存在する小さなユーティリティ群。
+  これらの境界（bounds）はコードベースの複数箇所で定義されるため、同じ説明を
+  繰り返すのは煩雑であり、このファイルに集約しています。
 */
 
-/// A `const`-context variant of the `max` function.
+/// `const` コンテキストで使える `max` 相当のマクロ。
 ///
-/// This is hidden as it's not to be considered part of our API commitment and is not guaranteed to
-/// be available/usable. It's implemented as a macro to work with any type, as we can't express an
-/// `Ord` bound within a `const` context.
+/// 注意: これはライブラリの公開 API の一部として安定を保証するものではありません。
+/// `const` 内ではトレイト境界（`Ord`）を表現できないため、任意の式に対して動作する
+/// マクロとして実装しています。
 #[doc(hidden)]
 #[macro_export]
 macro_rules! const_max {
   ($a: expr, $b: expr) => {
     if $a > $b {
+      // $a が大きければそれを返す
       $a
     } else {
+      // そうでなければ $b を返す
       $b
     }
   };
 }
 
-/// A `const`-context variant of the `min` function.
+/// `const` コンテキストで使える `min` 相当のマクロ。
 ///
-/// This is hidden as it's not to be considered part of our API commitment and is not guaranteed to
-/// be available/usable. It's implemented as a macro to work with any type, as we can't express an
-/// `Ord` bound within a `const` context.
+/// `const_max` と同様の理由でマクロとして提供されています。
 #[doc(hidden)]
 #[macro_export]
 macro_rules! const_min {
   ($a: expr, $b: expr) => {
     if $a < $b {
+      // $a が小さければそれを返す
       $a
     } else {
+      // そうでなければ $b を返す
       $b
     }
   };
 }
 
-/// An upper bound for a value.
+/// 値に対する上界（upper bound）を表す型ヒント。
 ///
-/// This is not guaranteed to be the minimal upper bound, solely a correct bound. This is not
-/// guaranteed to be a bound stable throughout the lifetime of the entire Monero protocol, solely
-/// as of the targeted version of the Monero protocol. It is intended to be used for size hints.
-/// Changes to this value, whether decreasing it to be closer to the actual bound or increasing it
-/// in response to a new version of the protocol, will not be considered breaking changes under
-/// SemVer.
+/// 実務的には最小の上界を保証するものではなく、あくまで「正しい（安全な）上界」を示す
+/// ために使います。Monero プロトコルの将来的な変更に伴いこの値が変化しても SemVer 的に
+/// 破壊的変更と見なさない設計です（サイズのヒント用途）。
 pub struct UpperBound<U>(pub U);
 
-/// A lower bound for a value.
+/// 値に対する下界（lower bound）を表す型ヒント。
 ///
-/// This is not guaranteed to be the maximal lower bound, solely a correct bound (meaning `0` would
-/// always be acceptable). This is not guaranteed to be a bound stable throughout the lifetime of
-/// the entire Monero protocol, solely as of the targeted version of the Monero protocol. It is
-/// intended to be used for size hints. Changes to this value, whether increasing it to be closer
-/// to the actual bound or decreasing it in response to a new version of the protocol, will not be
-/// considered breaking changes under SemVer.
+/// 上界と同様に、最大の下界を保証するものではなく、単に安全な下限を示す目的で使います。
+/// 例えば `0` が常に有効な下界であるような場合、この型はそのようなヒントを提供します。
 pub struct LowerBound<U>(pub U);

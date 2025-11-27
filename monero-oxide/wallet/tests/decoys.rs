@@ -1,3 +1,6 @@
+// このファイルはデコイ選択ロジック（OutputWithDecoys 等）が期待通りに
+// 最新の出力やロック解除された出力をデコイとして選ぶかを検証するテスト群です。
+// ※確率的な選択を含むため、リトライや複数試行を行って安定性を確かめます。
 use monero_simple_request_rpc::SimpleRequestRpc;
 use monero_wallet::{
   DEFAULT_LOCK_WINDOW,
@@ -8,6 +11,8 @@ use monero_wallet::{
 
 mod runner;
 
+// select_latest_output_as_decoy 系のテストは、
+// 新しくロック解除された出力がデコイ候補として選ばれるかを確認します。
 test!(
   select_latest_output_as_decoy_canonical,
   (
