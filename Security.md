@@ -1,42 +1,25 @@
-# Security
+# セキュリティ
 
-## Critical Disclosures
+## 重大な開示（クリティカルな脆弱性）
 
-Bugs in monero-oxide which cause a downstream project to be at risk of loss of
-funds (or a similarly critical issue) are to be reported via
-[monero-oxide's Bug Bounty Program](
-  https://immunefi.com/bug-bounty/monero-oxide/information/
-). This bug bounty was generously sponsored by
-[Power Up Privacy](https://powerupprivacy.com/) who directly handles payouts.
+資金の損失リスクや同等の重大な影響を下流プロジェクトにもたらすような
+monero-oxide のバグは、[monero-oxide のバグバウンティプログラム](https://immunefi.com/bug-bounty/monero-oxide/information/)を通じて報告してください。
+このバグバウンティは [Power Up Privacy](https://powerupprivacy.com/) の支援により提供されており、賞金の支払いは同社が直接管理します。
 
-All affected projects should be _privately_ disclosed to via their stated
-disclosure method (or any private means of communication upon lack of stated
-disclosure method).
+影響を受けるすべてのプロジェクトには、それぞれの定める開示方法（または開示方法が定められていない場合はプライベートな手段）を用いて**非公開**で通知してください。
 
-All projects, including monero-oxide, should be informed of if multiple
-projects were disclosed to, without permission to make a public disclosure
-until all projects resolve the issue.
+複数のプロジェクトに同時に開示を行う場合は、その事実をすべての関係プロジェクトに知らせ、全てのプロジェクトが問題を解決するまでは公開開示を行わないでください。
 
-## DoS Disclosures
+## DoS（サービス拒否）に関する開示
 
-Bugs which cause panics, or a similar denial-of-service, are to be reported to
-the administrators (via Matrix) and the affected downstream projects (again via
-their stated disclosure methods).
+パニックを引き起こすバグや同様のサービス拒否につながる脆弱性は、管理者へ（Matrix 経由）および影響を受ける下流プロジェクトへそれぞれの開示方法で報告してください。
 
-A public disclosure will only occur once monero-oxide releases a fix.
+パブリックな開示は、monero-oxide が修正をリリースした後にのみ行われます。
 
-## Bugs
+## その他のバグ
 
-All other bugs are to be reported via the GitHub issues of the monero-oxide
-repository. If the severity of a bug is in-question, it must be treated as its
-highest potential severity.
+それ以外のバグは、monero-oxide リポジトリの GitHub Issues を通じて報告してください。バグの深刻度が不明瞭な場合は、最高の潜在的致命度として扱ってください。
 
-## Fallback Disclosure Timeline
+## フォールバック（公開）開示のタイムライン
 
-Any bug within monero-oxide may be publicly disclosed three months after the
-date of its responsible disclosure to the monero-oxide project, regardless of
-its status. Prior to this deadline, any disclosed to party may request an
-extension of up to 60 days. If the discloser agrees to that extension, they must
-notify all disclosed-to parties of the new timeline and all must honor it. If
-the discloser does not agree, they must explicitly inform the requester of their
-disagreement.
+monero-oxide 内の任意のバグは、責任ある開示（responsible disclosure）の日付から 3 か月経過後に公開される可能性があります（修正状況にかかわらず）。この期限の前に、開示先のいずれかの当事者は最大 60 日の延長を要求できます。開示者がその延長に同意した場合、開示されたすべての当事者に対して新しいタイムラインを通知し、全員がそれを遵守するものとします。開示者が同意しない場合は、要求者にその旨を明示的に通知してください。

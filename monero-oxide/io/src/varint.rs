@@ -1,8 +1,8 @@
-//! Monero's VarInt type, frequently used to encode integers expected to be of low norm.
+//! Monero の VarInt 実装（可変長整数）。
 //!
-//! This corresponds to
-//! https://github.com/monero-project/monero/blob/8e9ab9677f90492bca3c7555a246f2a8677bd570
-//!   /src/common/varint.h.
+//! 小さい数値を効率的にエンコードするための形式で、Monero の C++ 実装に対応しています。
+//!
+//! 参照: https://github.com/monero-project/monero/blob/8e9ab9677f90492bca3c7555a246f2a8677bd570/src/common/varint.h
 
 #[allow(unused_imports)]
 use std_shims::prelude::*;
@@ -25,51 +25,43 @@ mod sealed {
   }
 }
 
-/// Compute the upper bound for the encoded length of a integer type as a VarInt.
-///
-/// This is a private function only called at compile-time, hence why it panics on unexpected
-/// input.
+/// 与えられたビット幅から VarInt の最大エンコード長を計算する（コンパイル時に評価される）。
 #[allow(clippy::cast_possible_truncation)]
 const fn upper_bound(bits: u32) -> usize {
-  // This assert ensures the following cast is correct even on 8-bit platforms
+  // 256 ビット（u256 相当）を超えない想定
   assert!(bits <= 256, "defining a number exceeding u256 as a VarInt");
-  // Manually implement `div_ceil` as it was introduced with 1.73 and `std-shims` cannot provide
-  // a `const fn` shim due to using a trait to provide this as a method
+  // 7 ビットずつエンコードするため ceil(bits / 7)
   ((bits + (7 - 1)) / 7) as usize
 }
 
-/// A trait for a number readable/writable as a VarInt.
+/// VarInt として読み書きできる数値向けトレイト（sealed）。
 ///
-/// This is sealed to prevent unintended implementations. It MUST only be implemented for primitive
-/// types (or sufficiently approximate types like `NonZero<_>`).
+/// 原則プリミティブ型のみで実装される想定で、誤った型の実装を防ぐためにシールドされている。
 pub trait VarInt: TryFrom<u64> + Copy + sealed::Sealed {
-  /// The lower bound on the amount of bytes this will take up when encoded.
+  /// エンコード時の最小バイト数
   const LOWER_BOUND: usize;
 
-  /// The upper bound on the amount of bytes this will take up when encoded.
+  /// エンコード時の最大バイト数（上限）
   const UPPER_BOUND: usize;
 
-  /// The amount of bytes this number will take when serialized as a VarInt.
+  /// この値を VarInt としてエンコードしたときのバイト長を返す。
   fn varint_len(self) -> usize {
     let varint_u64 = self.into_u64();
     usize::try_from(u64::BITS - varint_u64.leading_zeros()).expect("64 > usize::MAX?").div_ceil(7)
   }
 
-  /// Read a canonically-encoded VarInt.
+  /// 正格な（canonical）VarInt を読み取る。
   fn read<R: Read>(r: &mut R) -> io::Result<Self> {
     let mut bits = 0;
     let mut res = 0;
     while {
       let b = read_byte(r)?;
-      // Reject trailing zero bytes
-      // https://github.com/monero-project/monero/blob/8e9ab9677f90492bca3c7555a246f2a8677bd570
-      //   /src/common/varint.h#L107
+      // 余分な 0 バイト（先行ゼロ）は許容しない（非正規表現）
       if (bits != 0) && (b == 0) {
         Err(io::Error::other("non-canonical varint"))?;
       }
 
-      // We use `size_of` here as we control what `VarInt` is implemented for, and it's only for
-      // types whose size correspond to their range
+      // 実装側で VarInt を付与する型のサイズを用いてオーバーフローを検出
       #[allow(non_snake_case)]
       let U_BITS = core::mem::size_of::<Self>() * 8;
       if ((bits + 7) >= U_BITS) && (b >= (1 << (U_BITS - bits))) {
@@ -83,29 +75,29 @@ pub trait VarInt: TryFrom<u64> + Copy + sealed::Sealed {
     res.try_into().map_err(|_| io::Error::other("VarInt does not fit into integer type"))
   }
 
-  /// Encode a number as a VarInt.
+  /// VarInt をエンコードして書き込む。
   ///
-  /// This doesn't accept `self` to force writing it as `VarInt::write`, making it clear it's being
-  /// written with the VarInt encoding.
+  /// `self` を取らず参照を受ける API にしているのは、呼び出し側で明示的に `VarInt::write` を使う
+  /// 意図を示したいため。
   fn write<W: Write>(varint: &Self, w: &mut W) -> io::Result<()> {
     let mut varint: u64 = varint.into_u64();
 
-    // A do-while loop as we always encode at least one byte
+    // 少なくとも 1 バイトは出力する必要があるため擬似 do-while ループを用いる
     while {
-      // Take the next seven bits
+      // 次の 7 ビットを取り出す
       let mut b = u8::try_from(varint & u64::from(VARINT_VALUE_MASK))
         .expect("& 0b0111_1111 left more than 8 bits set");
       varint >>= 7;
 
-      // If there's more, set the continuation flag
+      // さらに残りがある場合は継続ビットを立てる
       if varint != 0 {
         b |= VARINT_CONTINUATION_FLAG;
       }
 
-      // Write this byte
+      // バイトを書き込む
       write_byte(&b, w)?;
 
-      // Continue until the number is fully encoded
+      // 数値を最後までエンコードするまでループ
       varint != 0
     } {}
 

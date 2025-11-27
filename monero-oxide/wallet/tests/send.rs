@@ -1,3 +1,8 @@
+// 送信処理に関する統合テスト群です。
+// - 入力の集合化（マイナー出力や一般出力）
+// - デコイ選択（OutputWithDecoys を用いたリング形成）
+// - トランザクション組立てとチェーン上での検証
+// などをシミュレートして期待挙動を検証します。
 use std::collections::HashSet;
 
 use rand_core::OsRng;
@@ -19,7 +24,8 @@ use runner::{SignableTransactionBuilder, ring_len};
 type SRR = SimpleRequestRpc;
 type SB = ScannableBlock;
 
-// Set up inputs, select decoys, then add them to the TX builder
+// ヘルパー: 与えられたウォレット出力群からデコイを選び、SignableTransactionBuilder に入力として追加する。
+// 非同期でRPCを参照するため `async`。実際のデコイ選択は OutputWithDecoys 側のロジックに委ねる。
 async fn add_inputs(
   rct_type: RctType,
   rpc: &SimpleRequestRpc,
@@ -27,6 +33,7 @@ async fn add_inputs(
   builder: &mut SignableTransactionBuilder,
 ) {
   for output in outputs {
+    // fingerprintable_deterministic_new は与えられた出力に対して決定論的にデコイを構築するヘルパー。
     builder.add_input(
       OutputWithDecoys::fingerprintable_deterministic_new(
         &mut OsRng,
@@ -41,6 +48,7 @@ async fn add_inputs(
   }
 }
 
+// 以下、さまざまな送信ケースを検証する test! マクロ群
 test!(
   spend_miner_output,
   (

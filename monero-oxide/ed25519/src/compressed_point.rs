@@ -11,7 +11,9 @@ use monero_io::read_bytes;
 
 use crate::Point;
 
-/// A compressed Ed25519 point.
+/// 圧縮された Ed25519 点（CompressedPoint）。
+///
+/// 英語原文: A compressed Ed25519 point.
 ///
 /// [`curve25519_dalek::edwards::CompressedEdwardsY`], the [`curve25519_dalek`] version of this
 /// struct, exposes a [`curve25519_dalek::edwards::CompressedEdwardsY::decompress`] function that
@@ -72,37 +74,33 @@ impl CompressedPoint {
     108, 114,  81, 213,  65,  84, 207, 169,  44,  23,  58,  13, 211, 156,  31, 148,
   ]);
 
-  /// Read a [`CompressedPoint`] without checking if this point can be decompressed.
+  /// 圧縮点を読み込みます（展開可能かはチェックしません）。
   ///
-  /// This may run in variable time.
+  /// 補足: この操作は可変時間で実行される可能性があります。
   pub fn read<R: Read>(r: &mut R) -> io::Result<CompressedPoint> {
     Ok(CompressedPoint(read_bytes(r)?))
   }
 
-  /// Write a compressed point.
+  /// 圧縮点を書き出します。
   ///
-  /// This may run in variable time.
+  /// 補足: この操作は可変時間で実行される可能性があります。
   pub fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
     w.write_all(&self.0)
   }
 
-  /// Returns the raw bytes of the compressed point.
+  /// 圧縮点の生バイト配列を返します。
   ///
-  /// This does not ensure these bytes represent a point of any validity, with no guarantees on
-  /// their contents.
+  /// 補足: このバイト配列が有効な点を表すかどうかは保証されません。
   pub fn to_bytes(&self) -> [u8; 32] {
     self.0
   }
 
-  /// Decompress a canonically-encoded Ed25519 point.
+  /// 正準的にエンコードされた Ed25519 点を展開します（canonical decode）。
   ///
-  /// Ed25519 is of order `8 * l`. This function ensures each of those `8 * l` points have a
-  /// singular encoding by checking points aren't encoded with an unreduced field element,
-  /// and aren't negative when the negative is equivalent (0 == -0).
+  /// 補足: Ed25519 の群の位数は `8 * l` であり、同じ点が複数の表現を持たないようにするため
+  /// unreduced なフィールド要素や -0 のような非標準表現を排除します。
   ///
-  /// Since this decodes an Ed25519 point, it does not check the point is in the prime-order
-  /// subgroup. Torsioned points do have a canonical encoding, and only aren't canonical when
-  /// considered in relation to the prime-order subgroup.
+  /// 注意: これは素因子群（prime-order subgroup）への所属はチェックしません。
   pub fn decompress(&self) -> Option<Point> {
     // TODO: Instead of re-compressing, check the edge cases with optimized algorithms
     curve25519_dalek::edwards::CompressedEdwardsY(self.0)
@@ -119,5 +117,5 @@ impl From<[u8; 32]> for CompressedPoint {
   }
 }
 
-// This does not implement `From<CompressedPoint> for [u8; 32]` to ensure
-// `CompressedPoint::to_bytes`, with its docstring, is the source of truth.
+// `CompressedPoint` から直接 `[u8; 32]` への `From` を実装していない理由:
+// `CompressedPoint::to_bytes` のドキュメントを正とするためです。

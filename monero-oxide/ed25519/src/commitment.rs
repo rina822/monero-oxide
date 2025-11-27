@@ -14,12 +14,16 @@ static H: LazyLock<curve25519_dalek::EdwardsPoint> = LazyLock::new(|| {
     .expect("couldn't decompress `CompressedPoint::H`")
 });
 
-/// The opening for a Pedersen commitment commiting to a `u64`.
+/// Pedersen 準コミットメント（u64 をコミットするための開示値）。
+///
+/// 英語原文: The opening for a Pedersen commitment commiting to a `u64`.
 #[derive(Clone, Zeroize, ZeroizeOnDrop)]
 pub struct Commitment {
   /// The mask for this commitment.
+  /// マスク（ランダムネス）: コミットメントの盲目化に使用されるスカラー。
   pub mask: Scalar,
   /// The amount committed to by this commitment.
+  /// コミットされた金額（u64）。
   pub amount: u64,
 }
 
@@ -37,9 +41,9 @@ impl core::fmt::Debug for Commitment {
 }
 
 impl Commitment {
-  /// A commitment to 0, defined with a mask of 1 (as to not be the identity).
+  /// 0 に対するコミットメント。マスクに 1 を使い、単位元とならないようにする定義。
   ///
-  /// This follows the Monero protocol's definition for a commitment without randomness.
+  /// 英語原文: A commitment to 0, defined with a mask of 1 (as to not be the identity).
   /// https://github.com/monero-project/monero
   ///   /blob/ac02af92867590ca80b2779a7bbeafa99ff94dcb/src/ringct/rctOps.cpp#L333
   #[doc(hidden)] // TODO: Remove this for `without_randomness`, taking an amount? How is this used?
@@ -48,12 +52,16 @@ impl Commitment {
   }
 
   /// Create a new `Commitment`.
+  ///
+  /// 英語原文: Create a new `Commitment`.
   pub fn new(mask: Scalar, amount: u64) -> Commitment {
     Commitment { mask, amount }
   }
 
   /// Commit to the value within this opening.
-  // TODO: Optimize around how `amount` is short.
+  /// 開示値から Pedersen コミットメントを生成します。
+  ///
+  /// 補足: `amount` は短い（u64）ため最適化の余地があります（TODO）。
   pub fn commit(&self) -> Point {
     Point::from(
       <curve25519_dalek::EdwardsPoint as curve25519_dalek::traits::MultiscalarMul>::multiscalar_mul(
@@ -67,6 +75,8 @@ impl Commitment {
   ///
   /// This is not a Monero protocol defined struct, and this is accordingly not a Monero protocol
   /// defined serialization. This may run in time variable to its value.
+  ///
+  /// 日本語: `Commitment` のバイナリ出力。Monero プロトコルのシリアライズ定義とは異なる。
   pub fn write<W: io::Write>(&self, w: &mut W) -> io::Result<()> {
     self.mask.write(w)?;
     w.write_all(&self.amount.to_le_bytes())
@@ -76,6 +86,8 @@ impl Commitment {
   ///
   /// This is not a Monero protocol defined struct, and this is accordingly not a Monero protocol
   /// defined serialization. This may run in time variable to its value.
+  ///
+  /// 日本語: `Commitment` を読み込む（バイナリ）。
   pub fn read<R: io::Read>(r: &mut R) -> io::Result<Commitment> {
     Ok(Commitment::new(Scalar::read(r)?, read_u64(r)?))
   }

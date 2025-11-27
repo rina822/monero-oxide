@@ -1,3 +1,9 @@
+// トランザクション／ブロックを走査して「自分宛て」の出力を検出するモジュールです。
+// 主要な責務:
+// - トランザクションの Extra を解析してキー派生（ECDH）を再計算
+// - 出力キーを自分のサブアドレス集合と比較して一致を検出
+// - 追加タイムロックの判定や amount の復号を行う
+// スキャンは `Scanner` / `GuaranteedScanner` を通じて提供されます。
 use core::ops::Deref;
 use std_shims::{vec, vec::Vec, collections::HashMap};
 

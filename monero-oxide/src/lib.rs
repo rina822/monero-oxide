@@ -3,38 +3,36 @@
 #![deny(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+// ライブラリの公開 API として外部クレートを再公開するトップレベルモジュール。
 pub use monero_io as io;
 pub use monero_ed25519 as ed25519;
 pub use monero_primitives as primitives;
 
-/// Merkle tree functionality.
+/// Merkle 木機能
 pub mod merkle;
 
-/// Ring Signature structs and functionality.
+/// リング署名関連機能
 pub mod ring_signatures;
 
-/// RingCT structs and functionality.
+/// RingCT 関連機能
 pub mod ringct;
 
-/// Transaction structs and functionality.
+/// トランザクション関連機能
 pub mod transaction;
-/// Block structs and functionality.
+/// ブロック関連機能
 pub mod block;
 
 #[cfg(test)]
 mod tests;
 
-/// The minimum amount of blocks an output is locked for.
+/// デフォルトの出力ロックウィンドウ（ブロック数）。
 ///
-/// If Monero suffered a re-organization, any transactions which selected decoys belonging to
-/// recent blocks would become invalidated. Accordingly, transactions must use decoys which are
-/// presumed to not be invalidated in the future. If wallets only selected n-block-old outputs as
-/// decoys, then any ring member within the past n blocks would have to be the real spend.
-/// Preventing this at the consensus layer ensures privacy and integrity.
+/// リオーガニゼーション（チェーン分岐）による影響を避けるために、過去 n ブロックより
+/// 新しい出力をデコイに選ばない等の合意的制約をサポートする値です。
 pub const DEFAULT_LOCK_WINDOW: usize = 10;
 
-/// The minimum amount of blocks a coinbase output is locked for.
+/// コインベース出力の最小ロック期間（ブロック数）。
 pub const COINBASE_LOCK_WINDOW: usize = 60;
 
-/// Monero's block time target, in seconds.
+/// ブロックのターゲット時間（秒）。
 pub const BLOCK_TIME: usize = 120;

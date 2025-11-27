@@ -1,29 +1,41 @@
+// 標準ライブラリ互換プレイサブルな項目をインポートします（`no_std` 対応の shim）。
 use std_shims::{
   vec,
   vec::Vec,
   io::{self, Read, Write},
 };
 
+// メモリ消去用のトレイトをインポート（秘密情報のゼロ化に使用）。
 use zeroize::{Zeroize, ZeroizeOnDrop};
+// 定数時間比較のための型をインポート
 use subtle::{Choice, ConstantTimeEq};
 
+// カレントクレートから必要な型をインポート
 use crate::{
+  // IO ヘルパー（read_u64 等）をまとめてインポート
   io::*,
+  // ed25519 関連の基本型
   ed25519::{Scalar, CompressedPoint, Point, Commitment},
+  // トランザクションのタイムロック型
   transaction::Timelock,
+  // サブアドレスインデックス型
   address::SubaddressIndex,
+  // extra 関連の定数・型
   extra::{MAX_ARBITRARY_DATA_SIZE, MAX_EXTRA_SIZE_BY_RELAY_RULE, PaymentId},
 };
 
-/// An absolute output ID, defined as its transaction hash and output index.
-///
-/// This is not the output's key as multiple outputs may share an output key.
+// --- AbsoluteId: トランザクションハッシュ + トランザクション内出力インデックスで表される絶対出力ID ---
+/// 絶対出力 ID: トランザクションハッシュとトランザクション内の出力インデックスで定義される構造体
+/// 複数の出力が同じ出力鍵を共有し得るため、これは出力鍵そのものではない点に注意
 #[derive(Clone, Zeroize, ZeroizeOnDrop)]
 pub(crate) struct AbsoluteId {
+  // トランザクションハッシュ（32 バイト）
   pub(crate) transaction: [u8; 32],
+  // トランザクション内の出力インデックス
   pub(crate) index_in_transaction: u64,
 }
 
+// Debug 実装: バイナリを人間可読な hex 表現にして表示
 impl core::fmt::Debug for AbsoluteId {
   fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
     fmt
@@ -35,35 +47,29 @@ impl core::fmt::Debug for AbsoluteId {
 }
 
 impl AbsoluteId {
-  /// A constant-time `eq`, albeit one not exposed via `ConstantTimeEq`.
+  // 定数時間比較を行う内部ヘルパー（タイミング攻撃を緩和）
   fn ct_eq(&self, other: &Self) -> Choice {
     self.transaction.ct_eq(&other.transaction) &
       self.index_in_transaction.ct_eq(&other.index_in_transaction)
   }
 
-  /// Write the AbsoluteId.
-  ///
-  /// This is not a Monero protocol defined struct, and this is accordingly not a Monero protocol
-  /// defined serialization. This may run in time variable to its value.
+  // シリアライズ: リトルエンディアンでインデックスを書き込む
   fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
     w.write_all(&self.transaction)?;
     w.write_all(&self.index_in_transaction.to_le_bytes())
   }
 
-  /// Read an AbsoluteId.
-  ///
-  /// This is not a Monero protocol defined struct, and this is accordingly not a Monero protocol
-  /// defined serialization. This may run in time variable to its value.
+  // デシリアライズ: read_bytes/read_u64 を使用して復元
   fn read<R: Read>(r: &mut R) -> io::Result<AbsoluteId> {
     Ok(AbsoluteId { transaction: read_bytes(r)?, index_in_transaction: read_u64(r)? })
   }
 }
 
-/// An output's relative ID.
-///
-/// This is defined as the output's index on the blockchain.
+// --- RelativeId: ブロックチェーン上の連続的なインデックス ---
+/// 相対出力 ID: ブロックチェーン上のインデックスで定義される
 #[derive(Clone, Zeroize, ZeroizeOnDrop)]
 pub(crate) struct RelativeId {
+  // ブロックチェーン上のインデックス
   pub(crate) index_on_blockchain: u64,
 }
 
@@ -74,38 +80,37 @@ impl core::fmt::Debug for RelativeId {
 }
 
 impl RelativeId {
-  /// A constant-time `eq`, albeit one not exposed via `ConstantTimeEq`.
+  // 定数時間比較
   fn ct_eq(&self, other: &Self) -> Choice {
     self.index_on_blockchain.ct_eq(&other.index_on_blockchain)
   }
 
-  /// Write the RelativeId.
-  ///
-  /// This is not a Monero protocol defined struct, and this is accordingly not a Monero protocol
-  /// defined serialization. This may run in time variable to its value.
+  // シリアライズ（リトルエンディアン）
   fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
     w.write_all(&self.index_on_blockchain.to_le_bytes())
   }
 
-  /// Read an RelativeId.
-  ///
-  /// This is not a Monero protocol defined struct, and this is accordingly not a Monero protocol
-  /// defined serialization. This may run in time variable to its value.
+  // デシリアライズ
   fn read<R: Read>(r: &mut R) -> io::Result<Self> {
     Ok(RelativeId { index_on_blockchain: read_u64(r)? })
   }
 }
 
-/// The data within an output, as necessary to spend the output.
+// --- OutputData: 出力を消費するために必要なデータ ---
+/// 出力の中身: 出力鍵、鍵オフセット、コミットメントを保持する
 #[derive(Clone, Zeroize, ZeroizeOnDrop)]
 pub(crate) struct OutputData {
+  // 出力の公開鍵（Point）
   pub(crate) key: Point,
+  // 出力鍵に対するオフセット（スカラー）
   pub(crate) key_offset: Scalar,
+  // 出力で使用されたコミットメント
   pub(crate) commitment: Commitment,
 }
 
 impl core::fmt::Debug for OutputData {
   fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+    // key は圧縮して hex 表示、commitment はそのまま Debug 表示
     fmt
       .debug_struct("OutputData")
       .field("key", &hex::encode(self.key.compress().to_bytes()))
@@ -115,55 +120,36 @@ impl core::fmt::Debug for OutputData {
 }
 
 impl OutputData {
-  /// A constant-time `eq`, albeit one not exposed via `ConstantTimeEq`.
+  // 定数時間比較: key, key_offset, commitment をすべて比較
   pub(crate) fn ct_eq(&self, other: &Self) -> Choice {
     self.key.ct_eq(&other.key) &
       self.key_offset.ct_eq(&other.key_offset) &
       self.commitment.ct_eq(&other.commitment)
   }
 
-  /// The key this output may be spent by.
+  // key を返す（コピー可能な Point）
   pub(crate) fn key(&self) -> Point {
     self.key
   }
 
-  /// The scalar to add to the private spend key for it to be the discrete logarithm of this
-  /// output's key.
+  // key_offset を返す
   pub(crate) fn key_offset(&self) -> Scalar {
     self.key_offset
   }
 
-  /// The commitment this output created.
+  // commitment への参照を返す
   pub(crate) fn commitment(&self) -> &Commitment {
     &self.commitment
   }
 
-  /// Write the OutputData.
-  ///
-  /// This is not a Monero protocol defined struct, and this is accordingly not a Monero protocol
-  /// defined serialization. This may run in time variable to its value.
+  // シリアライズ: key の圧縮バイト列、key_offset、commitment を順に書き込む
   pub(crate) fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
     w.write_all(&self.key.compress().to_bytes())?;
     self.key_offset.write(w)?;
     self.commitment.write(w)
   }
 
-  /* Commented as it's unused, due to self being private
-  /// Serialize the OutputData to a `Vec<u8>`.
-  ///
-  /// This is not a Monero protocol defined struct, and this is accordingly not a Monero protocol
-  /// defined serialization. This may run in time variable to its value.
-  pub fn serialize(&self) -> Vec<u8> {
-    let mut res = Vec::with_capacity(32 + 32 + 40);
-    self.write(&mut res).expect("write failed but <Vec as io::Write> doesn't fail");
-    res
-  }
-  */
-
-  /// Read an OutputData.
-  ///
-  /// This is not a Monero protocol defined struct, and this is accordingly not a Monero protocol
-  /// defined serialization. This may run in time variable to its value.
+  // デシリアライズ: 圧縮点から復元、失敗した場合はエラー
   pub(crate) fn read<R: Read>(r: &mut R) -> io::Result<OutputData> {
     Ok(OutputData {
       key: CompressedPoint::read(r)?
@@ -175,12 +161,16 @@ impl OutputData {
   }
 }
 
-/// The metadata for an output.
+// --- Metadata: 出力に付随するメタデータ ---
 #[derive(Clone, Zeroize, ZeroizeOnDrop)]
 pub(crate) struct Metadata {
+  // 追加のタイムロック（トランザクションレベルの標準タイムロックとは別）
   pub(crate) additional_timelock: Timelock,
+  // スキャンで判定されたサブアドレス（存在すれば Some）
   pub(crate) subaddress: Option<SubaddressIndex>,
+  // 任意で付与される支払い ID
   pub(crate) payment_id: Option<PaymentId>,
+  // 任意データ（extra の nonce 部分などの集まり）
   pub(crate) arbitrary_data: Vec<Vec<u8>>,
 }
 
@@ -197,6 +187,7 @@ impl core::fmt::Debug for Metadata {
 }
 
 impl Metadata {
+  // 単純比較（Debug 用ではなく実際の等価性を判断するためのヘルパー）
   fn eq(&self, other: &Self) -> bool {
     (self.additional_timelock == other.additional_timelock) &&
       (self.subaddress == other.subaddress) &&
@@ -204,21 +195,21 @@ impl Metadata {
       (self.arbitrary_data == other.arbitrary_data)
   }
 
-  /// Write the Metadata.
-  ///
-  /// This is not a Monero protocol defined struct, and this is accordingly not a Monero protocol
-  /// defined serialization. This may run in time variable to its value.
+  // シリアライズ: 各フィールドを順に書き出す
   fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
     self.additional_timelock.write(w)?;
 
+    // サブアドレスがある場合はフラグ 1 とアカウント/アドレスを書き込む
     if let Some(subaddress) = self.subaddress {
       w.write_all(&[1])?;
       w.write_all(&subaddress.account().to_le_bytes())?;
       w.write_all(&subaddress.address().to_le_bytes())?;
     } else {
+      // 無ければ 0
       w.write_all(&[0])?;
     }
 
+    // payment_id の有無フラグとデータ
     if let Some(payment_id) = self.payment_id {
       w.write_all(&[1])?;
       payment_id.write(w)?;
@@ -226,8 +217,10 @@ impl Metadata {
       w.write_all(&[0])?;
     }
 
+    // arbitrary_data の配列長を VarInt で書く
     VarInt::write(&self.arbitrary_data.len(), w)?;
     for part in &self.arbitrary_data {
+      // arbitrary data の各チャンクは u8 長で前置される（最大サイズチェック）
       const _ASSERT_MAX_ARBITRARY_DATA_SIZE_FITS_WITHIN_U8: [();
         (u8::MAX as usize) - MAX_ARBITRARY_DATA_SIZE] = [(); _];
       w.write_all(&[
@@ -238,10 +231,7 @@ impl Metadata {
     Ok(())
   }
 
-  /// Read a Metadata.
-  ///
-  /// This is not a Monero protocol defined struct, and this is accordingly not a Monero protocol
-  /// defined serialization. This may run in time variable to its value.
+  // デシリアライズ: 順に読み出し、各種検査を行う
   fn read<R: Read>(r: &mut R) -> io::Result<Metadata> {
     let additional_timelock = Timelock::read(r)?;
 
@@ -257,14 +247,11 @@ impl Metadata {
     Ok(Metadata {
       additional_timelock,
       subaddress,
+      // payment_id はフラグが 1 なら読んで Some に、そうでなければ None
       payment_id: if read_byte(r)? == 1 { PaymentId::read(r).ok() } else { None },
-      /*
-        This may technically read more `arbitrary_data` than can fit in actual transaction as it
-        only checks the arbitrary data, raw, will fit in an extra, with no other structure/fields.
-      */
       arbitrary_data: {
+        // チャンク数を VarInt で読み込み、総サイズが許容量を超えないか検査する
         let chunks = <usize as VarInt>::read(r)?;
-        // Each chunk will use at least one byte to be declared
         if chunks > MAX_EXTRA_SIZE_BY_RELAY_RULE {
           Err(io::Error::other(
             "amount of arbitrary data chunks exceeded amount possible under policy",
@@ -288,29 +275,23 @@ impl Metadata {
   }
 }
 
-/// A scanned output and all associated data.
-///
-/// This struct contains all data necessary to spend this output, or handle it as a payment.
-///
-/// This struct is bound to a specific instance of the blockchain. If the blockchain reorganizes
-/// the block this struct is bound to, it MUST be discarded. If any outputs are mutual to both
-/// blockchains, scanning the new blockchain will yield those outputs again.
-///
-/// The `Debug` implementation may reveal every value within its memory.
+// --- WalletOutput: スキャン済み出力と関連メタデータ ---
+/// スキャンされた出力とそれに紐づく全データを表す構造体
+/// この構造体はブロックチェーンの特定の状態に結びつくため、再編成が起きたら破棄する必要がある
 #[derive(Clone, Debug, Zeroize, ZeroizeOnDrop)]
 pub struct WalletOutput {
-  /// The absolute ID for this transaction.
+  /// 絶対 ID（トランザクションハッシュ + トランザクション内インデックス）
   pub(crate) absolute_id: AbsoluteId,
-  /// The ID for this transaction, relative to the blockchain.
+  /// ブロックチェーン上の相対 ID（連続インデックス）
   pub(crate) relative_id: RelativeId,
-  /// The output's data.
+  /// 出力データ本体
   pub(crate) data: OutputData,
-  /// Associated metadata relevant for handling it as a payment.
+  /// 支払い処理に必要なメタデータ
   pub(crate) metadata: Metadata,
 }
 
 impl PartialEq for WalletOutput {
-  /// This equality evaluates the entire object, not just the ID.
+  /// 完全な等価性: ID やデータをすべて比較する。定数時間比較で秘密情報の漏洩を防ぐ。
   fn eq(&self, other: &Self) -> bool {
     bool::from(
       self.absolute_id.ct_eq(&other.absolute_id) &
@@ -322,88 +303,57 @@ impl PartialEq for WalletOutput {
 impl Eq for WalletOutput {}
 
 impl WalletOutput {
-  /// The hash of the transaction which created this output.
+  // トランザクションハッシュを返す
   pub fn transaction(&self) -> [u8; 32] {
     self.absolute_id.transaction
   }
 
-  /// The index of the output within the transaction.
+  // トランザクション内インデックスを返す
   pub fn index_in_transaction(&self) -> u64 {
     self.absolute_id.index_in_transaction
   }
 
-  /// The index of the output on the blockchain.
+  // ブロックチェーン上のインデックスを返す
   pub fn index_on_blockchain(&self) -> u64 {
     self.relative_id.index_on_blockchain
   }
 
-  /// The key this output may be spent by.
+  // 出力鍵を返す
   pub fn key(&self) -> Point {
     self.data.key()
   }
 
-  /// The scalar to add to the private spend key for it to be the discrete logarithm of this
-  /// output's key.
+  // 鍵オフセットを返す
   pub fn key_offset(&self) -> Scalar {
     self.data.key_offset()
   }
 
-  /// The commitment this output created.
+  // コミットメントを返す
   pub fn commitment(&self) -> &Commitment {
     self.data.commitment()
   }
 
-  /// The additional timelock this output is subject to.
-  ///
-  /// All outputs are subject to the '10-block lock', a 10-block window after their inclusion
-  /// on-chain during which they cannot be spent. Outputs may be additionally timelocked. This
-  /// function only returns the additional timelock.
+  // 追加のタイムロック（標準 10 ブロック以外の追加分）を返す
   pub fn additional_timelock(&self) -> Timelock {
     self.metadata.additional_timelock
   }
 
-  /// The index of the subaddress this output was identified as sent to.
+  // サブアドレス情報を返す（存在する場合）
   pub fn subaddress(&self) -> Option<SubaddressIndex> {
     self.metadata.subaddress
   }
 
-  /// The payment ID included with this output.
-  ///
-  /// This field may be `Some` even if wallet2 would not return a payment ID. wallet2 will only
-  /// decrypt a payment ID if either:
-  ///
-  /// A) The transaction wasn't made by the wallet (via checking if any key images are recognized)
-  /// B) For the highest-indexed input with a recognized key image, it spends an output with
-  ///    subaddress account `(a, _)` which is distinct from this output's subaddress account
-  ///
-  /// Neither of these cases are handled by `monero-wallet` as scanning doesn't have the context
-  /// of key images.
-  //
-  // Identification of the subaddress account for the highest-indexed input with a recognized key
-  // image:
-  //   https://github.com/monero-project/monero/blob/a1dc85c5373a30f14aaf7dcfdd95f5a7375d3623
-  //     /src/wallet/wallet2.cpp/#L2637-L2670
-  //
-  // Removal of 'transfers' received to this account:
-  //   https://github.com/monero-project/monero/blob/a1dc85c5373a30f14aaf7dcfdd95f5a7375d3623
-  //     /src/wallet/wallet2.cpp/#L2782-L2794
-  //
-  // Payment IDs only being decrypted for the remaining transfers:
-  //   https://github.com/monero-project/monero/blob/a1dc85c5373a30f14aaf7dcfdd95f5a7375d3623
-  //     /src/wallet/wallet2.cpp/#L2796-L2844
+  // 支払い ID を返す（デコード済みの PaymentId）
   pub fn payment_id(&self) -> Option<PaymentId> {
     self.metadata.payment_id
   }
 
-  /// The arbitrary data from the `extra` field of the transaction which created this output.
+  // トランザクションの extra に含まれる任意データ部分を返す
   pub fn arbitrary_data(&self) -> &[Vec<u8>] {
     &self.metadata.arbitrary_data
   }
 
-  /// Write the WalletOutput.
-  ///
-  /// This is not a Monero protocol defined struct, and this is accordingly not a Monero protocol
-  /// defined serialization. This may run in time variable to its value.
+  // シリアライズ（書き込み）を行うユーティリティ
   pub fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
     self.absolute_id.write(w)?;
     self.relative_id.write(w)?;
@@ -411,20 +361,14 @@ impl WalletOutput {
     self.metadata.write(w)
   }
 
-  /// Serialize the WalletOutput to a `Vec<u8>`.
-  ///
-  /// This is not a Monero protocol defined struct, and this is accordingly not a Monero protocol
-  /// defined serialization. This may run in time variable to its value.
+  // シリアライズして Vec<u8> を返すヘルパー
   pub fn serialize(&self) -> Vec<u8> {
     let mut serialized = Vec::with_capacity(128);
     self.write(&mut serialized).expect("write failed but <Vec as io::Write> doesn't fail");
     serialized
   }
 
-  /// Read a WalletOutput.
-  ///
-  /// This is not a Monero protocol defined struct, and this is accordingly not a Monero protocol
-  /// defined serialization. This may run in time variable to its value.
+  // デシリアライズ: 各フィールドを順に読み出して WalletOutput を復元
   pub fn read<R: Read>(r: &mut R) -> io::Result<WalletOutput> {
     Ok(WalletOutput {
       absolute_id: AbsoluteId::read(r)?,

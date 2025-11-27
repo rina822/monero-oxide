@@ -1,3 +1,6 @@
+// このファイルはトランザクションへ任意データを埋め込み、
+// 送受信とスキャンが期待どおり動作することを検証するテスト群です。
+// 基本的にランナーが提供するローカルRPC環境で動作します。
 use monero_oxide::transaction::Transaction;
 use monero_simple_request_rpc::SimpleRequestRpc;
 use monero_wallet::{rpc::Rpc, extra::MAX_ARBITRARY_DATA_SIZE, send::SendError};
@@ -11,9 +14,10 @@ test!(
   add_single_data_less_than_max,
   (
     |_, mut builder: Builder, addr| async move {
+      // 任意データを最大長より1バイト少なく作る（許容範囲内）
       let arbitrary_data = vec![b'\0'; MAX_ARBITRARY_DATA_SIZE - 1];
 
-      // make sure we can add to tx
+      // トランザクションへデータを追加できることを確認する（サイズチェック済）
       builder.add_data(arbitrary_data.clone()).unwrap();
 
       builder.add_payment(addr, 5);

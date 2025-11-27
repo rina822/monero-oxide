@@ -1,19 +1,11 @@
-# Contributing
+# 貢献について
 
-All contributions to monero-oxide are done with pull requests. This project
-has a series of established regulations regarding contributed code, as follows:
+すべての貢献はプルリクエストで行われます。本プロジェクトには、寄稿されるコードに関する以下の規定があります。
 
-1) All code contributed must be your own work as an individual, or legally
-   licensed and appropriately attributed. Contributions generated via large
-   data-sets without full licensing and attribution of the underlying data
-   points is not allowed.
+1) 寄稿されるコードは、寄稿者自身の著作物であるか、法的にライセンスされ適切に帰属が示されている必要があります。基になるデータポイントの完全なライセンスと帰属が示されていない大規模データセットから生成された貢献は許可されません。
 
-2) The CI must pass, including `+nightly fmt`, `+nightly clippy`, and the full
-   test suite.
+2) CI は通過している必要があります。これには `+nightly fmt`、`+nightly clippy`、およびテストスイート全体が含まれます。
 
-3) Panics must be minimized and explicitly documented when allowed to occur.
+3) パニックは最小限に抑えられ、許容される場合は明示的に文書化される必要があります。
 
-4) The priorities of the code are safety first and foremost, propriety second,
-   clarity third, and having parity with Monero regarding organization/naming
-   fourth. The lack of parity with Monero may impact clarity yet is not itself
-   inherently an issue.
+4) コードの優先順位は、第一に安全性、第二に適正さ、第三に明瞭さ、第四に Monero との組織/命名の整合性です。Monero との整合性の欠如は明瞭さに影響する可能性がありますが、それ自体が必ずしも問題ではありません。

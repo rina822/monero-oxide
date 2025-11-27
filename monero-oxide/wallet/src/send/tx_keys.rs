@@ -1,3 +1,5 @@
+// トランザクション内で使用する一時的な鍵列（擬似乱数生成器）を生成・管理するモジュールです。
+// 送金時に再現可能な鍵ストリームを生成することで、後で使用した鍵を再派生して検証や支払い証明に用います。
 use core::ops::Deref;
 use std_shims::{vec, vec::Vec};
 
@@ -24,6 +26,8 @@ fn seeded_rng(
   outgoing_view_key: &[u8; 32],
   input_keys_and_commitments: Vec<(Point, Point)>,
 ) -> ChaCha20Rng {
+  // seeded_rng: 与えられた DST（ドメイン分離タグ）と view key、入力の鍵とコミットメントに基づいて
+  // 一意な乱数生成器（ChaCha20Rng）を初期化する。これによりトランザクション鍵列が一貫して再現可能になる。
   // Apply the DST
   let mut transcript = Zeroizing::new(vec![
     u8::try_from(dst.len()).expect("internal RNG with constant DST had a too-long DST specified")

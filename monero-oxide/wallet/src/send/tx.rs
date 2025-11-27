@@ -1,3 +1,6 @@
+// このファイルは送金時に SignableTransaction から実際のトランザクション要素（inputs/outputs/extra 等）を
+// 組み立てるロジックを含みます。ここではトランザクションのシリアライズに必要な各パートを
+// 生成する関数群を実装しています。
 use std_shims::{vec, vec::Vec};
 
 #[cfg(feature = "compile-time-generators")]
@@ -18,7 +21,7 @@ use crate::{
 };
 
 impl SignableTransaction {
-  // Output the inputs for this transaction.
+  // inputs: SignableTransaction の内部表現から `transaction::Input` リストを生成します。
   pub(crate) fn inputs(&self, key_images: &[CompressedPoint]) -> Vec<Input> {
     debug_assert_eq!(self.inputs.len(), key_images.len());
 
@@ -33,7 +36,7 @@ impl SignableTransaction {
     res
   }
 
-  // Output the outputs for this transaction.
+  // outputs: SignableTransaction の内部表現から `transaction::Output` リストを生成します。
   pub(crate) fn outputs(&self, key_images: &[CompressedPoint]) -> Vec<Output> {
     let shared_key_derivations = self.shared_key_derivations(key_images);
     debug_assert_eq!(self.payments.len(), shared_key_derivations.len());
@@ -56,7 +59,7 @@ impl SignableTransaction {
     res
   }
 
-  // Calculate the TX extra for this transaction.
+  // extra: トランザクションの `extra` フィールド（鍵・追加キー・payment id・任意データ等）を生成します。
   pub(crate) fn extra(&self) -> Vec<u8> {
     let (tx_key, additional_keys) = self.transaction_keys_pub();
     debug_assert!(additional_keys.is_empty() || (additional_keys.len() == self.payments.len()));
@@ -119,12 +122,9 @@ impl SignableTransaction {
 
   pub(crate) fn weight_and_necessary_fee(&self) -> (usize, u64) {
     /*
-      This transaction is variable length to:
-        - The decoy offsets (fixed)
-        - The TX extra (variable to key images, requiring an interactive protocol)
-
-      Thankfully, the TX extra *length* is fixed. Accordingly, we can calculate the inevitable TX's
-      weight at this time with a shimmed transaction.
+      weight_and_necessary_fee: トランザクションの重み（バイト長等に派生）と、その重さから推定される
+      必要な手数料を計算します。トランザクションは可変長要素（extra, fee の VarInt 長など）を持つため、
+      ここではダミーの構成要素で重さを推定しています。
     */
     let base_weight = {
       let mut key_images = Vec::with_capacity(self.inputs.len());

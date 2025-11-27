@@ -1,3 +1,6 @@
+// このファイルはマルチシグ（FROST）でトランザクションに署名するための機械群を実装します。
+// 具体的には 1) TransactionMachine (前処理生成), 2) TransactionSignMachine (署名操作),
+// 3) TransactionSignatureMachine (署名の結合) を用いてマルチパーティ署名を実現します。
 use std_shims::{
   vec::Vec,
   io::{self, Read},

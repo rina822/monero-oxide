@@ -11,14 +11,14 @@ use std_shims::io::{self, Read, Write};
 mod varint;
 pub use varint::*;
 
-/// Write a byte.
+/// 1 バイトを書き込む補助関数。
 ///
-/// This is used as a building block within generic functions.
+/// 汎用的なシリアライザ内でのビルディングブロックとして使用される。
 pub fn write_byte<W: Write>(byte: &u8, w: &mut W) -> io::Result<()> {
   w.write_all(&[*byte])
 }
 
-/// Write a list of elements, without length-prefixing.
+/// 長さプレフィックス無しで要素列を書き込む。
 pub fn write_raw_vec<T, W: Write, F: FnMut(&T, &mut W) -> io::Result<()>>(
   mut f: F,
   values: &[T],
@@ -30,7 +30,7 @@ pub fn write_raw_vec<T, W: Write, F: FnMut(&T, &mut W) -> io::Result<()>>(
   Ok(())
 }
 
-/// Write a list of elements, with length-prefixing.
+/// 要素列を書き込み、先頭に VarInt で長さを付ける。
 pub fn write_vec<T, W: Write, F: FnMut(&T, &mut W) -> io::Result<()>>(
   f: F,
   values: &[T],
@@ -40,34 +40,34 @@ pub fn write_vec<T, W: Write, F: FnMut(&T, &mut W) -> io::Result<()>>(
   write_raw_vec(f, values, w)
 }
 
-/// Read a constant amount of bytes.
+/// 固定長のバイト数を読み取るユーティリティ。
 pub fn read_bytes<R: Read, const N: usize>(r: &mut R) -> io::Result<[u8; N]> {
   let mut res = [0; N];
   r.read_exact(&mut res)?;
   Ok(res)
 }
 
-/// Read a single byte.
+/// 1 バイトを読み取る。
 pub fn read_byte<R: Read>(r: &mut R) -> io::Result<u8> {
   Ok(read_bytes::<_, 1>(r)?[0])
 }
 
-/// Read a u16, little-endian encoded.
+/// リトルエンディアンで `u16` を読み取る。
 pub fn read_u16<R: Read>(r: &mut R) -> io::Result<u16> {
   read_bytes(r).map(u16::from_le_bytes)
 }
 
-/// Read a u32, little-endian encoded.
+/// リトルエンディアンで `u32` を読み取る。
 pub fn read_u32<R: Read>(r: &mut R) -> io::Result<u32> {
   read_bytes(r).map(u32::from_le_bytes)
 }
 
-/// Read a u64, little-endian encoded.
+/// リトルエンディアンで `u64` を読み取る。
 pub fn read_u64<R: Read>(r: &mut R) -> io::Result<u64> {
   read_bytes(r).map(u64::from_le_bytes)
 }
 
-/// Read a variable-length list of elements, without length-prefixing.
+/// 長さが既知の要素列を読み取る（長さプレフィックス無し）。
 pub fn read_raw_vec<R: Read, T, F: FnMut(&mut R) -> io::Result<T>>(
   mut f: F,
   len: usize,
@@ -80,7 +80,7 @@ pub fn read_raw_vec<R: Read, T, F: FnMut(&mut R) -> io::Result<T>>(
   Ok(res)
 }
 
-/// Read a constant-length list of elements.
+/// 固定長の配列を読み取るユーティリティ（`Vec` を読み取ってから変換する）。
 pub fn read_array<R: Read, T: Debug, F: FnMut(&mut R) -> io::Result<T>, const N: usize>(
   f: F,
   r: &mut R,
@@ -92,11 +92,7 @@ pub fn read_array<R: Read, T: Debug, F: FnMut(&mut R) -> io::Result<T>, const N:
   })
 }
 
-/// Read a length-prefixed variable-length list of elements.
-///
-/// An optional bound on the length of the result may be provided. If `None`, the returned `Vec`
-/// will be of the length read off the reader, if successfully read. If `Some(_)`, an error will be
-/// raised if the length read off the read is greater than the bound.
+/// VarInt（長さ付き）を読み取り、必要に応じて上限チェックを行ってベクタを構築する。
 pub fn read_vec<R: Read, T, F: FnMut(&mut R) -> io::Result<T>>(
   f: F,
   length_bound: Option<usize>,

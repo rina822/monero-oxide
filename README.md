@@ -1,23 +1,14 @@
 # monero-oxide
 
-monero-oxide is an organization to maintain and develop the `monero-oxide`
-family of libraries, implementing large swaths of the Monero protocol in Rust.
-For information on the organization's information, please see our
-[governance document](./Governance.md).
+`monero-oxide` は、Monero プロトコルの大部分を Rust で実装する `monero-oxide` ライブラリ群を保守・開発する組織です。組織の詳細については、[ガバナンス文書](./Governance.md) を参照してください。
 
-The organization primarily develops and maintains two crates (with many crates
-underneath them):
+本組織は主に二つのクレート（およびそれらの下位に多数のクレート）を開発・維持しています:
 
-- [`monero-oxide`](./monero-oxide): A Rust implementation of the Monero
-  blockchain protocol.
-- [`monero-wallet`](./monero-oxide/wallet): Wallet functionality for the Monero
-  protocol.
+- [`monero-oxide`](./monero-oxide): Monero ブロックチェーンプロトコルの Rust 実装。
+- [`monero-wallet`](./monero-oxide/wallet): Monero プロトコル向けのウォレット機能。
 
-The latest copy of the documentation is available [here](
-  https://monero-oxide.github.io/monero-oxide/monero_wallet/index.html
-).
+最新のドキュメントは次の場所で閲覧できます: https://monero-oxide.github.io/monero-oxide/monero_wallet/index.html
 
-We welcome contributions, either via making issues or opening pull requests.
-For the latter, please see our [contributing guidelines](./Contributing.md).
+貢献は Issue の作成またはプルリクエストで歓迎します。プルリクエストについては [貢献ガイド](./Contributing.md) をお読みください。
 
-To report a security issue, please see our [disclosure policy](./Security.md).
+セキュリティ問題の報告方法については、[開示ポリシー](./Security.md) を参照してください。

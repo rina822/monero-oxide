@@ -1,3 +1,5 @@
+// リング署名（旧 Cryptonote の署名形式）に関する実装。
+// RingCT により非推奨となったが、プロトコル互換性のため実装は残す。
 use std_shims::{
   io::{self, *},
   vec::Vec,
@@ -7,6 +9,7 @@ use zeroize::Zeroize;
 
 use crate::{io::*, ed25519::*};
 
+/// 内部的な署名要素（c, s）。テスト時は pub、通常は非公開フィールド。
 #[derive(Clone, PartialEq, Eq, Debug, Zeroize)]
 pub(crate) struct Signature {
   #[cfg(test)]
@@ -31,9 +34,7 @@ impl Signature {
   }
 }
 
-/// A ring signature.
-///
-/// This was used by the original Cryptonote transaction protocol and was deprecated with RingCT.
+/// リング署名本体。複数の `Signature` を保持する。
 #[derive(Clone, PartialEq, Eq, Debug, Zeroize)]
 pub struct RingSignature {
   #[cfg(test)]
@@ -43,7 +44,7 @@ pub struct RingSignature {
 }
 
 impl RingSignature {
-  /// Write the RingSignature.
+  /// RingSignature を書き込む。
   pub fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
     for sig in &self.sigs {
       sig.write(w)?;
@@ -51,16 +52,15 @@ impl RingSignature {
     Ok(())
   }
 
-  /// Read a RingSignature.
+  /// RingSignature を読み取る。
   pub fn read<R: Read>(members: usize, r: &mut R) -> io::Result<RingSignature> {
     Ok(RingSignature { sigs: read_raw_vec(Signature::read, members, r)? })
   }
 
-  /// Verify the ring signature.
+  /// リング署名の検証。
   ///
-  /// WARNING: This follows the Fiat-Shamir transcript format used by the Monero protocol, which
-  /// makes assumptions on what has already been transcripted and bound to within `msg_hash`. Do
-  /// not use this if you don't know what you're doing.
+  /// 注意: Monero の Fiat-Shamir トランスクリプト形式に従っており、`msg_hash` に何が
+  /// 含まれているべきかの前提があるため、誤用は非常に危険です。
   pub fn verify(
     &self,
     msg_hash: &[u8; 32],
@@ -84,21 +84,8 @@ impl RingSignature {
     let mut sum = curve25519_dalek::Scalar::ZERO;
     for (ring_member, sig) in ring.iter().zip(&self.sigs) {
       /*
-        The traditional Schnorr signature is:
-          r = sample()
-          c = H(r G || m)
-          s = r - c x
-        Verified as:
-          s G + c A == R
-
-        Each ring member here performs a dual-Schnorr signature for:
-          s G + c A
-          s HtP(A) + c K
-        Where the transcript is pushed both these values, r G, r HtP(A) for the real spend.
-        This also serves as a DLEq proof between the key and the key image.
-
-        Checking sum(c) == H(transcript) acts a disjunction, where any one of the `c`s can be
-        modified to cause the intended sum, if and only if a corresponding `s` value is known.
+        ここでは各リングメンバーについて双対 Schnorr 署名相当の検証値を生成し、
+        最終的に c 値の合計がハッシュと一致するかを確認する。
       */
 
       let Some(decomp_ring_member) = ring_member.decompress() else {

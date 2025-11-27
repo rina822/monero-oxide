@@ -3,6 +3,13 @@
 #![deny(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+// `wallet` クレートのエントリポイントです。
+// このクレートは主に次を提供します:
+// - アドレス/ビューキー関連 (`view_pair`)
+// - 取引スキャン/出力表現 (`scan`, `output`)
+// - デコイ選択ロジック (`decoys`)
+// - 送金用の高レベル API (`send`)
+
 use core::ops::Deref;
 use std_shims::vec::Vec;
 

@@ -1,3 +1,7 @@
+// `Eventuality` は、署名された SignableTransaction がオンチェーンで生成するであろう
+// 期待される Transaction の「最終形」を表す補助構造です。
+// これはプライバシー上の制約からあくまであいまいな一致（fuzzy match）を行い、
+// あるオンチェーントランザクションがこの SignableTransaction に対応するかを判定します。
 use std_shims::{vec::Vec, io};
 
 use zeroize::Zeroize;

@@ -1,3 +1,6 @@
+// このファイルは各種アドレス（標準、サブアドレス、統合アドレス、保証付きアドレス）に対する
+// スキャナ（Scanner / GuaranteedScanner）の動作を検証します。
+// 出力の検出、PaymentId の復号、サブアドレスの検出などを含むテスト群です。
 use monero_simple_request_rpc::SimpleRequestRpc;
 use monero_wallet::{
   transaction::Transaction, rpc::Rpc, address::SubaddressIndex, extra::PaymentId, GuaranteedScanner,
@@ -9,6 +12,7 @@ mod runner;
 type SRR = SimpleRequestRpc;
 type Tx = Transaction;
 
+// Scanner の各ケース（legacy, subaddr, integrated, guaranteed 等）を検証するテスト群
 test!(
   scan_standard_address,
   (

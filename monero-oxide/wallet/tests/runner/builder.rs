@@ -1,3 +1,6 @@
+// テスト用の SignableTransaction を簡単に組み立てるビルダ。
+// - 支出入力、宛先ペイメント、チェンジ、任意データ、手数料率を保持し、
+//   最終的に `SignableTransaction::new` を呼んで検証付きで組み立てます。
 use zeroize::{Zeroize, Zeroizing};
 
 use monero_wallet::{
@@ -9,7 +12,7 @@ use monero_wallet::{
   extra::MAX_ARBITRARY_DATA_SIZE,
 };
 
-/// A builder for Monero transactions.
+/// A builder for Monero transactions (テスト用ヘルパー)
 #[derive(Clone, PartialEq, Eq, Zeroize, Debug)]
 pub struct SignableTransactionBuilder {
   rct_type: RctType,
@@ -61,6 +64,7 @@ impl SignableTransactionBuilder {
 
   #[allow(unused)]
   pub fn add_data(&mut self, data: Vec<u8>) -> Result<&mut Self, SendError> {
+    // 任意データのサイズ制限を超えていないか確認する。超過時は SendError を返す。
     if data.len() > MAX_ARBITRARY_DATA_SIZE {
       Err(SendError::TooMuchArbitraryData)?;
     }
