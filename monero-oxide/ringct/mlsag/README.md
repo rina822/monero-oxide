@@ -1,11 +1,12 @@
 # Monero MLSAG
 
-The MLSAG linkable ring signature, as defined by the Monero protocol.
+# Monero MLSAG
 
-This library is usable under no-std when the `std` feature (on by default) is
-disabled.
+Monero プロトコルで定義される MLSAG（可鎖接可能リング署名）。
 
-### Cargo Features
+このライブラリは、デフォルトで有効な `std` 機能を無効にすることで、no-std 環境下で利用可能です。
 
-- `std` (on by default): Enables `std` (and with it, more efficient internal
+### Cargo 機能
+
+- `std` (デフォルトで有効): `std` を有効にし、より効率的な内部実装を提供します。
   implementations).

@@ -1,13 +1,14 @@
 # Monero Bulletproofs(+)
 
-Bulletproofs(+) range proofs, as defined by the Monero protocol.
+# Monero Bulletproofs(+)
 
-This library is usable under no-std when the `std` feature (on by default) is
-disabled.
+Bulletproofs(+) 範囲証明（Monero プロトコルで定義される）。
 
-### Cargo Features
+このライブラリは、デフォルトで有効な `std` 機能を無効にすることで、no-std 環境下で利用可能です。
 
-- `std` (on by default): Enables `std` (and with it, more efficient internal
+### Cargo 機能
+
+- `std` (デフォルトで有効): `std` を有効にし、より効率的な内部実装を提供します。
   implementations).
 - `compile-time-generators` (on by default): Derives the generators at
   compile-time so they don't need to be derived at runtime. This is recommended

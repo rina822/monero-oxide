@@ -1,11 +1,11 @@
 # Monero Address
 
-Rust implementation of Monero addresses.
+# Monero アドレス
 
-This library is usable under no-std when the `std` feature (on by default) is
-disabled.
+Monero アドレスの Rust 実装。
 
-### Cargo Features
+このライブラリは、デフォルトで有効な `std` 機能を無効にすることで、no-std 環境下で利用可能です。
 
-- `std` (on by default): Enables `std` (and with it, more efficient internal
-  implementations).
+### Cargo 機能
+
+- `std` (デフォルトで有効): `std` を有効にし、より効率的な内部実装を提供します。

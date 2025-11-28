@@ -45,139 +45,164 @@ pub enum EpeeError {
 pub const HEADER: [u8; 8] = *b"\x01\x11\x01\x01\x01\x01\x02\x01";
 /// The supported version of the EPEE protocol.
 // https://github.com/monero-project/monero/blob/8d4c625713e3419573dfcc7119c8848f47cabbaa
-#![cfg_attr(docsrs, feature(doc_cfg))]
-#![doc = include_str!("../README.md")]
-#![deny(missing_docs)]
-#![no_std]
-
-use core::marker::PhantomData;
-
-mod io;
-mod stack;
-mod parser;
-
-pub(crate) use io::*;
-pub use io::{BytesLike, String};
-pub(crate) use stack::*;
-pub use parser::*;
-
-/// デコード中に発生し得るエラー列挙型。
-///
-/// 各バリアントは EPEE デコードの特定の失敗を表す（長さ不足、型不一致、深さ超過等）。
-#[derive(Clone, Copy, Debug)]
-pub enum EpeeError {
-  /// デコード中に到達してはならない内部状態に入った
-  InternalError,
-  /// 期待されるヘッダが見つからなかった
-  InvalidHeader,
-  /// サポートされないバージョン（Option<u8> は読み出したバージョンを保持）
-  InvalidVersion(Option<u8>),
-  /// 指定されたバイト数が読み取り可能な長さを超えている
-  Short(usize),
-  /// 未知の型が指定されている
-  UnrecognizedType,
-  /// 空文字列キーが見つかった
-  EmptyKey,
-  /// オブジェクトの深さ制限を超えた
-  DepthLimitExceeded,
-  /// 期待した型と実際の型が異なる
-  TypeError,
-  /// `Epee` オブジェクトが再利用された（不正な API 使用）
-  EpeeReuse,
-}
-
-/// EPEE ヘッダ（バイナリ定数）
-// 参照: monero の実装
-pub const HEADER: [u8; 8] = *b"\x01\x11\x01\x01\x01\x01\x02\x01";
-/// サポートする EPEE プロトコルのバージョン
+//  /contrib/epee/include/storages/portable_storage_base.h#L39
 pub const VERSION: u8 = 1;
 
-/// EPEE エンコードを読み取るデコーダ
+/// A decoder for an EPEE-encoded object.
 pub struct Epee<'encoding, B: BytesLike<'encoding>> {
   current_encoding_state: B,
   stack: Stack,
   error: Option<EpeeError>,
   _encoding_lifetime: PhantomData<&'encoding ()>,
 }
-/// デコード中のエントリを表す型
+/// An item with an EPEE-encoded object.
 pub struct EpeeEntry<'encoding, 'parent, B: BytesLike<'encoding>> {
   root: Option<&'parent mut Epee<'encoding, B>>,
   kind: Type,
   len: usize,
 }
 
-// `EpeeEntry` がドロップされるとき、デコーダの状態をそのエントリ分だけ進めるようにする
+// When this entry is dropped, advance the decoder past it
 impl<'encoding, 'parent, B: BytesLike<'encoding>> Drop for EpeeEntry<'encoding, 'parent, B> {
   #[inline(always)]
-  fn drop(&mut self) {/* Lines 69-75 omitted */}
+  fn drop(&mut self) {
+    if let Some(root) = self.root.take() {
+      while root.error.is_none() && (self.len != 0) {
+        root.error = root.stack.step(&mut root.current_encoding_state).err();
+        self.len -= 1;
+      }
+    }
+  }
 }
 
 impl<'encoding, B: BytesLike<'encoding>> Epee<'encoding, B> {
-  /// 新しいデコーダビューを作成する。
-  pub fn new(mut encoding: B) -> Result<Self, EpeeError> {/* Lines 81-104 omitted */}
+  /// Create a new view of an encoding.
+  pub fn new(mut encoding: B) -> Result<Self, EpeeError> {
+    // Check the header
+    {
+      let mut present_header = [0; HEADER.len()];
+      encoding.read_into_slice(&mut present_header)?;
+      if present_header != HEADER {
+        Err(EpeeError::InvalidHeader)?;
+      }
+    }
 
-  /// ルートエントリを取得する。取得後は同じ `Epee` から再度 `entry` を呼べない。
-  pub fn entry(&mut self) -> Result<EpeeEntry<'encoding, '_, B>, EpeeError> {/* Lines 112-116 omitted */}
+    // Check the version
+    {
+      let version = encoding.read_byte().ok();
+      if version != Some(VERSION) {
+        Err(EpeeError::InvalidVersion(version))?;
+      }
+    }
+
+    Ok(Epee {
+      current_encoding_state: encoding,
+      stack: Stack::root_object(),
+      error: None,
+      _encoding_lifetime: PhantomData,
+    })
+  }
+
+  /// Obtain an `EpeeEntry` representing the encoded object.
+  ///
+  /// This takes a mutable reference as `Epee` is the owned object representing the decoder's
+  /// state. However, this is not eligible to be called again after consumption. Multiple calls to
+  /// this function will cause an error to be returned.
+  pub fn entry(&mut self) -> Result<EpeeEntry<'encoding, '_, B>, EpeeError> {
+    if (self.stack.depth() != 1) || self.error.is_some() {
+      Err(EpeeError::EpeeReuse)?;
+    }
+    Ok(EpeeEntry { root: Some(self), kind: Type::Object, len: 1 })
+  }
 }
 
-/// フィールド列挙用イテレータ
+/// An iterator over fields.
 pub struct FieldIterator<'encoding, 'parent, B: BytesLike<'encoding>> {
   root: &'parent mut Epee<'encoding, B>,
   len: usize,
 }
 
-// 未読のアイテム分だけデコーダを進めるための Drop 実装
+// When this object is dropped, advance the decoder past the unread items
 impl<'encoding, 'parent, B: BytesLike<'encoding>> Drop for FieldIterator<'encoding, 'parent, B> {
   #[inline(always)]
-  fn drop(&mut self) {/* Lines 129-133 omitted */}
+  fn drop(&mut self) {
+    while self.root.error.is_none() && (self.len != 0) {
+      self.root.error = self.root.stack.step(&mut self.root.current_encoding_state).err();
+      self.len -= 1;
+    }
+  }
 }
 
 impl<'encoding, 'parent, B: BytesLike<'encoding>> FieldIterator<'encoding, 'parent, B> {
-  /// オブジェクト内の次の (キー, 値) を取得する。
+  /// The next entry (key, value) within the object.
   ///
-  /// `Iterator::next` と似ているが、各要素がイテレータからミュータブル参照を借用するため
-  /// 標準の `Iterator` トレイトを実装できない点に注意。
+  /// This is approximate to `Iterator::next` yet each item maintains a mutable reference to the
+  /// iterator. Accordingly, we cannot use `Iterator::next` which requires items not borrow from
+  /// the iterator.
+  ///
+  /// [polonius-the-crab](https://docs.rs/polonius-the-crab) details a frequent limitation of
+  /// Rust's borrow checker which users of this function may incur. It also details potential
+  /// solutions (primarily using inlined code instead of functions, callbacks) before presenting
+  /// itself as a complete solution. Please refer to it if you have difficulties calling this
+  /// method for context.
   #[allow(clippy::type_complexity, clippy::should_implement_trait)]
   pub fn next(
     &mut self,
-  ) -> Option<Result<(String<'encoding, B>, EpeeEntry<'encoding, '_, B>), EpeeError>> {/* Lines 152-166 omitted */}
+  ) -> Option<Result<(String<'encoding, B>, EpeeEntry<'encoding, '_, B>), EpeeError>> {
+    if let Some(error) = self.root.error {
+      return Some(Err(error));
+    }
+
+    self.len = self.len.checked_sub(1)?;
+    let (key, kind, len) = match self.root.stack.single_step(&mut self.root.current_encoding_state)
+    {
+      Ok(Some(SingleStepResult::Entry { key, kind, len })) => (key, kind, len),
+      // A `FieldIterator` was constructed incorrectly or some other internal error
+      Ok(_) => return Some(Err(EpeeError::InternalError)),
+      Err(e) => return Some(Err(e)),
+    };
+
+    Some(Ok((key, EpeeEntry { root: Some(self.root), kind, len })))
+  }
 }
 
-/// 配列用イテレータ
+/// An iterator over an array.
 pub struct ArrayIterator<'encoding, 'parent, B: BytesLike<'encoding>> {
   root: &'parent mut Epee<'encoding, B>,
   kind: Type,
   len: usize,
 }
 
-// ArrayIterator の Drop 実装
+// When this array is dropped, advance the decoder past the unread items
 impl<'encoding, 'parent, B: BytesLike<'encoding>> Drop for ArrayIterator<'encoding, 'parent, B> {
   #[inline(always)]
-  fn drop(&mut self) {/* Lines 180-184 omitted */}
+  fn drop(&mut self) {
+    while self.root.error.is_none() && (self.len != 0) {
+      self.root.error = self.root.stack.step(&mut self.root.current_encoding_state).err();
+      self.len -= 1;
+    }
+  }
 }
 
 impl<'encoding, 'parent, B: BytesLike<'encoding>> ArrayIterator<'encoding, 'parent, B> {
-  /// 配列内の次の要素を取得する。
+  /// The next item within the array.
+  ///
+  /// This is approximate to `Iterator::next` yet each item maintains a mutable reference to the
+  /// iterator. Accordingly, we cannot use `Iterator::next` which requires items not borrow from
+  /// the iterator.
+  ///
+  /// [polonius-the-crab](https://docs.rs/polonius-the-crab) details a frequent limitation of
+  /// Rust's borrow checker which users of this function may incur. It also details potential
+  /// solutions (primarily using inlined code instead of functions, callbacks) before presenting
+  /// itself as a complete solution. Please refer to it if you have difficulties calling this
+  /// method for context.
   #[allow(clippy::should_implement_trait)]
-  pub fn next(&mut self) -> Option<Result<EpeeEntry<'encoding, '_, B>, EpeeError>> {/* Lines 201-207 omitted */}
-}
+  pub fn next(&mut self) -> Option<Result<EpeeEntry<'encoding, '_, B>, EpeeError>> {
+    if let Some(err) = self.root.error {
+      return Some(Err(err));
+    }
 
-impl<'encoding, 'parent, B: BytesLike<'encoding>> EpeeEntry<'encoding, 'parent, B> {
-  /// エントリが表す型を返す
-  #[inline(always)]
-  pub fn kind(&self) -> Type {/* Lines 214-215 omitted */}
-
-  /// エントリ内に含まれる項目数を返す
-  #[allow(clippy::len_without_is_empty)]
-  #[inline(always)]
-  pub fn len(&self) -> usize {/* Lines 221-222 omitted */}
-
-  /// オブジェクトのフィールドを反復するイテレータを返す
-  pub fn fields(mut self) -> Result<FieldIterator<'encoding, 'parent, B>, EpeeError> {/* Lines 226-242 omitted */}
-
-  /// コンテナ内の全要素を返すイテレータ（省略）
-  /* Lines 246-371 omitted */
-}
+    self.len = self.len.checked_sub(1)?;
     Some(Ok(EpeeEntry { root: Some(self.root), kind: self.kind, len: 1 }))
   }
 }

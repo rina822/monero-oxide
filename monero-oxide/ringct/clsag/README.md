@@ -1,13 +1,13 @@
 # Monero CLSAG
 
-The CLSAG linkable ring signature, as defined by the Monero protocol.
-Additionally included is an implementation of
-[FROSTLASS](
-  https://github.com/monero-oxide/monero-oxide/tree/main/audits/FROSTLASS
-), a FROST-inspired threshold multisignature algorithm with identifiable
-aborts.
+# Monero CLSAG
 
-This library is usable under no-std when the `std` feature (on by default) is
+Monero プロトコルで定義される CLSAG（可鎖接可能リング署名）。
+また、[FROSTLASS](
+  https://github.com/monero-oxide/monero-oxide/tree/main/audits/FROSTLASS
+)（FROST にインスパイアされた識別可能なアボート機能を持つしきい値マルチシグアルゴリズム）の実装も含まれています。
+
+このライブラリは、デフォルトで有効な `std` 機能を無効にすることで、no-std 環境下で利用可能です。
 disabled.
 
 ### Cargo Features

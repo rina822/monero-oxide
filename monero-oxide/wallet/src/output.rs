@@ -303,57 +303,57 @@ impl PartialEq for WalletOutput {
 impl Eq for WalletOutput {}
 
 impl WalletOutput {
-  // トランザクションハッシュを返す
+  /// トランザクションハッシュを返す
   pub fn transaction(&self) -> [u8; 32] {
     self.absolute_id.transaction
   }
 
-  // トランザクション内インデックスを返す
+  /// トランザクション内インデックスを返す
   pub fn index_in_transaction(&self) -> u64 {
     self.absolute_id.index_in_transaction
   }
 
-  // ブロックチェーン上のインデックスを返す
+  /// ブロックチェーン上のインデックスを返す
   pub fn index_on_blockchain(&self) -> u64 {
     self.relative_id.index_on_blockchain
   }
 
-  // 出力鍵を返す
+  /// 出力鍵を返す
   pub fn key(&self) -> Point {
     self.data.key()
   }
 
-  // 鍵オフセットを返す
+  /// 鍵オフセットを返す
   pub fn key_offset(&self) -> Scalar {
     self.data.key_offset()
   }
 
-  // コミットメントを返す
+  /// コミットメントを返す
   pub fn commitment(&self) -> &Commitment {
     self.data.commitment()
   }
 
-  // 追加のタイムロック（標準 10 ブロック以外の追加分）を返す
+  /// 追加のタイムロック（標準 10 ブロック以外の追加分）を返す
   pub fn additional_timelock(&self) -> Timelock {
     self.metadata.additional_timelock
   }
 
-  // サブアドレス情報を返す（存在する場合）
+  /// サブアドレス情報を返す（存在する場合）
   pub fn subaddress(&self) -> Option<SubaddressIndex> {
     self.metadata.subaddress
   }
 
-  // 支払い ID を返す（デコード済みの PaymentId）
+  /// 支払い ID を返す（デコード済みの PaymentId）
   pub fn payment_id(&self) -> Option<PaymentId> {
     self.metadata.payment_id
   }
 
-  // トランザクションの extra に含まれる任意データ部分を返す
+  /// トランザクションの extra に含まれる任意データ部分を返す
   pub fn arbitrary_data(&self) -> &[Vec<u8>] {
     &self.metadata.arbitrary_data
   }
 
-  // シリアライズ（書き込み）を行うユーティリティ
+  /// シリアライズ（書き込み）を行うユーティリティ
   pub fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
     self.absolute_id.write(w)?;
     self.relative_id.write(w)?;
@@ -361,14 +361,14 @@ impl WalletOutput {
     self.metadata.write(w)
   }
 
-  // シリアライズして Vec<u8> を返すヘルパー
+  /// シリアライズして Vec<u8> を返すヘルパー
   pub fn serialize(&self) -> Vec<u8> {
     let mut serialized = Vec::with_capacity(128);
     self.write(&mut serialized).expect("write failed but <Vec as io::Write> doesn't fail");
     serialized
   }
 
-  // デシリアライズ: 各フィールドを順に読み出して WalletOutput を復元
+  /// デシリアライズ: 各フィールドを順に読み出して WalletOutput を復元
   pub fn read<R: Read>(r: &mut R) -> io::Result<WalletOutput> {
     Ok(WalletOutput {
       absolute_id: AbsoluteId::read(r)?,

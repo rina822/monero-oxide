@@ -1,11 +1,11 @@
 # Monero RPC
 
-Trait for an RPC connection to a Monero daemon, built around monero-oxide.
+# Monero RPC クライアント
 
-This library is usable under no-std when the `std` feature (on by default) is
-disabled.
+Monero デーモンへの RPC 接続用トレイト。monero-oxide を中心に構築されています。
 
-### Cargo Features
+このライブラリは、デフォルトで有効な `std` 機能を無効にすることで、no-std 環境下で利用可能です。
 
-- `std` (on by default): Enables `std` (and with it, more efficient internal
-  implementations).
+### Cargo 機能
+
+- `std` (デフォルトで有効): `std` を有効にし、より効率的な内部実装を提供します。

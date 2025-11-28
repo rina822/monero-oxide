@@ -1,13 +1,13 @@
 # Monero Ed25519
 
-Ed25519 functionality, as within the Monero protocol.
+# Monero Ed25519
 
-This library primarily serves to allow our API to not bind to any specific
-elliptic curve implementation, allowing us to upgrade/replace it without
-breaking SemVer.
+Monero プロトコル内で使用される Ed25519 機能。
 
-This library is usable under no-std when the `std` feature (on by default) is
-disabled.
+このライブラリは主に、私たちの API が特定の楕円曲線実装に縛られないようにすることで、
+SemVer を破さずにそれをアップグレード・置き換えられるようにすることを目的としています。
+
+このライブラリは、デフォルトで有効な `std` 機能を無効にすることで、no-std 環境下で利用可能です。
 
 ### Cargo Features
 

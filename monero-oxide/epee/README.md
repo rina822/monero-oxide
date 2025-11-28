@@ -1,40 +1,23 @@
 # Monero EPEE
 
-`epee` is a bespoke library with various utilities, primarily seen today due to
-its continued usage within the Monero project. Originating without
-documentation, it contained a self-describing typed binary format referred to
-as 'portable storage'. We refer to it as `epee`, after the library introducing
-it, within this library and throughout our ecosystem. Thankfully, the
-[Monero project now hosts a description](
+# Monero EPEE
+
+`epee` は、Monero プロジェクト内での継続的な利用により、今日よく見かけるようになった、様々なユーティリティを備えたカスタムライブラリです。元々ドキュメント不足でしたが、「ポータブルストレージ」と呼ばれる自己記述的な型付きバイナリフォーマットを含んでいました。このライブラリおよびエコシステム全体で、これを導入するライブラリにちなんで `epee` と呼んでいます。幸いなことに、[Monero プロジェクトは今その説明をホストしており](
   https://github.com/monero-project/monero/blob/8e9ab9677f90492bca3c7555a246f2a8677bd570/docs/PORTABLE_STORAGE.md
-) which is sufficient to understand and implement it.
+)、これにより理解と実装が十分に可能になりました。
 
-Our library has the following exceptions:
-- We don't support the `Array` type (type 13) as it's unused in practice and
-  lacking documentation. See
-  [this PR](https://github.com/monero-project/monero/pull/10138) to Monero
-  removing it entirely.
-- We may accept a _wider_ class of inputs than the `epee` library itself. Our
-  definition of compatibility is explicitly if we can decode anything encoded
-  by the `epee` library _it itself will decode_ and all encodings we produce
-  may be decoded by the `epee` library. We do not expect completeness, so some
-  successfully decoded objects may not be able to be encoded, and vice versa.
+当ライブラリは以下の例外を持ちます:
+- `Array` 型（型 13）はサポートしていません。これは実運用で未使用で、ドキュメントがないためです。[この Monero へのプルリクエスト](https://github.com/monero-project/monero/pull/10138)を参照してください（完全に削除されています）。
+- `epee` ライブラリそのものより **より広い** クラスの入力を受け入れる可能性があります。当ライブラリの互換性定義は、`epee` ライブラリ自体が解読できるもの全てをデコードでき、かつ当ライブラリが生成する全ての符号化が `epee` ライブラリでデコード可能である場合に明示的です。完全性を期待していないため、正常にデコードされたオブジェクトの中にはエンコード不可能なものもあり、その逆も真です。
 
-At this time, we do not support:
-- Encoding objects
-- Decoding objects into typed data structures
+現在、当ライブラリは以下をサポートしていません:
+- オブジェクトのエンコーディング
+- オブジェクトのデコーディング（型付きデータ構造へ）
 
-Instead, we support indexing `epee`-encoded values and decoding individual
-fields in a manner comparable to `serde_json::Value` (albeit without
-allocating, recursing, or using a proc macro). This is sufficient for basic
-needs, much simpler, and should be trivial to verify won't panic/face various
-resource exhaustion attacks compared to more complex implementations.
+代わりに、`epee` エンコード値のインデックシングと、`serde_json::Value` に類似した方式で個別フィールドのデコーディングをサポートしています（ただしアロケーション、再帰、プロセスマクロなしで）。これは基本的なニーズに十分で、より単純で、様々なリソース枯渇攻撃に対してパニックしない検証が容易な実装と比較して自明です。
 
-Because of this, we are also able to support no-`std` and no-`alloc`, without
-any dependencies other than `core`, while only consuming approximately one
-kibibyte of memory on the stack.
+このため、当ライブラリは依存関係なしで（`core` のみ）、スタック上の約 1 キビバイトのメモリを消費するだけで、no-`std` と no-`alloc` もサポートしています。
 
-For a more functional library, please check out
-[`cuprate-epee-encoding`](
+より機能的なライブラリについては、[`cuprate-epee-encoding`](
   https://github.com/cuprate/cuprate/tree/9c2c942d2fcf26ed8916dc3f9be6db43d8d2ae78/net/epee-encoding
-).
+)をご確認ください。

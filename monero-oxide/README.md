@@ -1,13 +1,12 @@
 # monero-oxide
 
-A modern Monero transaction library. It provides a modern, Rust-friendly view of
-the Monero protocol.
+# monero-oxide
 
-This library is usable under no-std when the `std` feature (on by default) is
-disabled.
+モダン Monero トランザクションライブラリ。Monero プロトコルへの最新の Rust フレンドリーなビューを提供します。
 
-Recommended usage of the library is with `overflow-checks = true`, even for
-release builds.
+このライブラリは、デフォルトで有効な `std` 機能を無効にすることで、no-std 環境下で利用可能です。
+
+ライブラリの推奨使用方法は、リリースビルドでさえ `overflow-checks = true` で行うことです。
 
 ### Cargo Features
 

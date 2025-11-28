@@ -1,12 +1,12 @@
 # Monero Borromean
 
-Borromean ring signatures arranged into a range proof, as done by the Monero
-protocol.
+# Monero Borromean
 
-This library is usable under no-std when the `std` feature (on by default) is
-disabled.
+Borromean リング署名を範囲証明に配置したもの（Monero プロトコルで行われるように）。
 
-### Cargo Features
+このライブラリは、デフォルトで有効な `std` 機能を無効にすることで、no-std 環境下で利用可能です。
+
+### Cargo 機能
 
 - `std` (on by default): Enables `std` (and with it, more efficient internal
   implementations).
