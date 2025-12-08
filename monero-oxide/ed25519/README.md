@@ -9,7 +9,6 @@ SemVer を破さずにそれをアップグレード・置き換えられるよ�
 
 このライブラリは、デフォルトで有効な `std` 機能を無効にすることで、no-std 環境下で利用可能です。
 
-### Cargo Features
+### Cargo 機能
 
-- `std` (on by default): Enables `std` (and with it, more efficient internal
-  implementations).
+- `std` (デフォルト有効): `std` を有効にし、より効率的な内部実装を使用します。

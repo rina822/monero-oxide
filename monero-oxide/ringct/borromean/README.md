@@ -8,5 +8,4 @@ Borromean リング署名を範囲証明に配置したもの（Monero プロト
 
 ### Cargo 機能
 
-- `std` (on by default): Enables `std` (and with it, more efficient internal
-  implementations).
+- `std` (デフォルト有効): `std` を有効にし、より効率的な内部実装を使用します。

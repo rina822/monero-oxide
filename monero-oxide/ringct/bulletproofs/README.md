@@ -8,8 +8,5 @@ Bulletproofs(+) 範囲証明（Monero プロトコルで定義される）。
 
 ### Cargo 機能
 
-- `std` (デフォルトで有効): `std` を有効にし、より効率的な内部実装を提供します。
-  implementations).
-- `compile-time-generators` (on by default): Derives the generators at
-  compile-time so they don't need to be derived at runtime. This is recommended
-  if program size doesn't need to be kept minimal.
+- `std` (デフォルト有効): `std` を有効にし、より効率的な内部実装を使用します。
+- `compile-time-generators` (デフォルト有効): ジェネレータをコンパイル時に導出し、実行時の導出を不要にします。プログラムサイズを最小限に保つ必要がない場合に推奨されます。

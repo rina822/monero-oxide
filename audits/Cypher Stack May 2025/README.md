@@ -1,8 +1,7 @@
-# Cypher Stack May 2025 Audit
+# Cypher Stack 2025年5月監査
 
-Audit of Serai's `/networks/monero`, which became the `monero-oxide` folder, by
-Cypher Stack (PDF yielded in May 2025, PDF published in August, 2025).
+Serai の `/networks/monero` の監査であり、`monero-oxide` フォルダとなりました。Cypher Stack による監査（PDF は 2025年5月に実施、2025年8月に公開）。
 
-Please see [here](
+詳細は [こちら](
   https://github.com/cypherstack/monero_wallet_audit/releases/tag/1.1
-) for provenance.
+) を参照してください。

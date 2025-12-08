@@ -1,59 +1,38 @@
 # [monero-wallet](https://docs.rs/monero-wallet)
 
-Wallet functionality for the Monero protocol, built around
-[monero-oxide](https://docs.rs/monero-oxide). This library prides itself on
-resolving common pitfalls developers may face.
+Monero プロトコル向けウォレット機能。[monero-oxide](https://docs.rs/monero-oxide) を中心に構築されています。このライブラリは開発者が直面する一般的な落とし穴を解決することに重点を置いています。
 
-`monero-wallet` also offers a FROST-inspired multisignature protocol orders of
-magnitude more performant than Monero's own, formalized as
-[FROSTLASS](../../audits/FROSTLASS/FROSTLASS.pdf).
+`monero-wallet` は、[FROSTLASS](../../audits/FROSTLASS/FROSTLASS.pdf) として形式化された、Monero 独自のものより数桁高速な FROST インスパイアの閾値マルチシグプロトコルも提供します。
 
-This library is usable under no-std when the `std` feature (on by default) is
-disabled.
+このライブラリは、デフォルトで有効な `std` 機能を無効にすることで、no-std 環境下で利用可能です。
 
-### Features
+### 機能
 
-- Scanning Monero transactions
-- Sending Monero transactions
-- Sending Monero transactions with a FROST-inspired threshold multisignature
-  protocol, orders of magnitude more performant than Monero's own
+- Monero トランザクションのスキャン
+- Monero トランザクションの送信
+- FROST インスパイアの閾値マルチシグプロトコルを使用した Monero トランザクション送信（Monero 独自のものより数桁高速）
 
-### Caveats
+### 注意事項
 
-This library DOES attempt to do the following:
+このライブラリが **実装しようとするもの** ：
 
-- Create on-chain transactions identical to how wallet2 would (unless told not
-  to)
-- Not be detectable as `monero-wallet` when scanning outputs
-- Not reveal spent outputs to the connected RPC node
+- wallet2 と同じ方法でオンチェーン トランザクションを作成（明示的に指示されない限り）
+- 出力のスキャン時に `monero-wallet` として検出されない
+- 接続先 RPC ノードに消費された出力を明かさない
 
-This library DOES NOT attempt to do the following:
+このライブラリが **実装しようとしないもの** ：
 
-- Have identical RPC behavior when scanning outputs/creating transactions
-- Be a wallet, maintaining state, performing output selection, and running in
-  the background
+- 出力のスキャン/トランザクション作成時に同じ RPC 動作を持つ
+- ウォレットとして機能する（状態維持、出力選択、バックグラウンド実行）
 
-This means that `monero-wallet` shouldn't be fingerprintable on-chain. It also
-shouldn't be fingerprintable if a targeted attack occurs to detect if the
-receiving wallet is `monero-wallet` or `wallet2`. It also should be generally
-safe for usage with remote nodes, but may be detected as `monero-wallet` by a
-remote node. The implications of this are left to the user to consider.
+つまり、`monero-wallet` はオンチェーンで指紋認証可能になるべきではありません。また、受信ウォレットが `monero-wallet` か `wallet2` かを検出するための標的型攻撃に対しても指紋認証可能になるべきではありません。リモートノードでの使用も一般的に安全なはずですが、リモートノード側では `monero-wallet` として検出される可能性があります。この含意はユーザーの判断に委ねられます。
 
-It also won't act as a wallet, just as a wallet-functionality library.
-`wallet2` has several *non-transaction-level* policies, such as always
-attempting to use two inputs to create transactions. These are considered out
-of scope to `monero-wallet`.
+`monero-wallet` はウォレットではなく、ウォレット機能ライブラリとして機能します。`wallet2` には常に 2 つの入力を使用しようとするなど、いくつかの *トランザクションレベル以外の* ポリシーがあります。これらは `monero-wallet` のスコープ外と見なされます。
 
-Finally, this library only supports producing transactions with CLSAG
-signatures. That means this library cannot spend non-RingCT outputs.
+最後に、このライブラリは CLSAG 署名を使用したトランザクション生成のみをサポートしています。つまり、このライブラリは RingCT 以外の出力を消費することはできません。
 
-### Cargo Features
+### Cargo 機能
 
-- `std` (on by default): Enables `std` (and with it, more efficient internal
-  implementations).
-- `compile-time-generators` (on by default): Derives the generators at
-  compile-time so they don't need to be derived at runtime. This is recommended
-  if program size doesn't need to be kept minimal.
-- `multisig`: Adds support for creation of transactions using a threshold
-  multisignature wallet represented by [`dkg`](https://docs.rs/dkg). This
-  functionality is not covered by SemVer, except along minor versions.
+- `std` (デフォルト有効): `std` を有効にし、より効率的な内部実装を使用します。
+- `compile-time-generators` (デフォルト有効): ジェネレータをコンパイル時に導出し、実行時の導出を不要にします。プログラムサイズを最小限に保つ必要がない場合に推奨されます。
+- `multisig`: [`dkg`](https://docs.rs/dkg) で表現された閾値マルチシグ ウォレットを使用したトランザクション作成のサポートを追加します。この機能は SemVer でカバーされていません（マイナーバージョンに沿って）。

@@ -8,11 +8,8 @@
 
 ライブラリの推奨使用方法は、リリースビルドでさえ `overflow-checks = true` で行うことです。
 
-### Cargo Features
+### Cargo 機能
 
-- `std` (on by default): Enables `std` (and with it, more efficient internal
-  implementations).
-- `compile-time-generators` (on by default): Derives the generators at
-  compile-time so they don't need to be derived at runtime. This is recommended
-  if program size doesn't need to be kept minimal.
-- `multisig`: Enables the `multisig` feature for all dependencies.
+- `std` (デフォルト有効): `std` を有効にし、より効率的な内部実装を使用します。
+- `compile-time-generators` (デフォルト有効): ジェネレータをコンパイル時に導出し、実行時の導出を不要にします。プログラムサイズを最小限に保つ必要がない場合に推奨されます。
+- `multisig`: すべての依存関係に対して `multisig` 機能を有効にします。

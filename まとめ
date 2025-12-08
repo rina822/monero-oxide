@@ -1,0 +1,116 @@
+# monero-oxide 日本語化作業まとめ（2025年11月28日）
+
+## 🎯 実施内容
+
+### 1. バグ修復
+**問題**: 先ほどの日本語コメント追加により、以下のファイルに構文破壊が発生
+- `epee/src/lib.rs`: 重複した `#![cfg_attr(...)]` と `pub enum EpeeError` の二重定義
+- `epee/src/parser.rs`: 重複した `use` 文やネストエラー、未閉鎖ブレース
+
+**対応**:
+- ✅ `git restore --source=aebc44f -- epee/src/lib.rs epee/src/parser.rs`
+- ✅ 既知の良いコミット (aebc44f) から2ファイルを復元
+- ✅ `wallet/src/output.rs` のドキュメントコメント修正（`//` → `///`）
+
+### 2. テスト確認
+```
+$ ~/.cargo/bin/cargo test --workspace
+```
+**結果**: ✅ 全テスト成功（RPC テスト除く、ノード接続が必要）
+
+### 3. ドキュメント日本語化（全 16 ファイル）
+
+#### コア README.md ファイル
+| ファイルパス | 内容 | 状態 |
+|-------------|------|------|
+| `monero-oxide/README.md` | メインライブラリ説明 | ✅ 完了 |
+| `rpc/README.md` | RPC クライアント機能 | ✅ 完了 |
+| `primitives/README.md` | プリミティブ構造体 | ✅ 完了 |
+| `ed25519/README.md` | Ed25519 演算 | ✅ 完了 |
+| `io/README.md` | I/O シリアライゼーション | ✅ 完了 |
+| `epee/README.md` | EPEE ライブラリ詳細 | ✅ 完了 |
+
+#### ウォレット関連 README.md
+| ファイルパス | 内容 | 状態 |
+|-------------|------|------|
+| `wallet/base58/README.md` | Base58 エンコーディング | ✅ 完了 |
+| `wallet/address/README.md` | アドレス実装 | ✅ 完了 |
+| `rpc/simple-request/README.md` | simple-request RPC | ✅ 完了 |
+
+#### リングCT（署名）関連 README.md
+| ファイルパス | 内容 | 状態 |
+|-------------|------|------|
+| `ringct/borromean/README.md` | Borromean リング署名 | ✅ 完了 |
+| `ringct/bulletproofs/README.md` | Bulletproofs 範囲証明 | ✅ 完了 |
+| `ringct/bulletproofs/generators/README.md` | Bulletproofs ジェネレータ | ✅ 完了 |
+| `ringct/clsag/README.md` | CLSAG & FROSTLASS | ✅ 完了 |
+| `ringct/mlsag/README.md` | MLSAG リング署名 | ✅ 完了 |
+
+#### テスト関連 README.md
+| ファイルパス | 内容 | 状態 |
+|-------------|------|------|
+| `tests/no-std/README.md` | no-std 環境テスト | ✅ 完了 |
+| `tests/verify-chain/README.md` | チェーン検証ツール | ✅ 完了 |
+
+### 4. Git コミット・プッシュ
+```bash
+$ git add -A
+$ git commit -m "docs: add Japanese translations to remaining README.md files and fix missing docs in wallet/output.rs"
+$ git push
+```
+
+**結果**:
+- ✅ コミット成功: `4877656`
+- ✅ リモートプッシュ完了
+- 19 ファイル変更
+- 358 行追加 / 392 行削除
+
+---
+
+## 📊 統計
+
+| 項目 | 数値 |
+|-----|------|
+| 日本語化ファイル数 | 16 ファイル |
+| 変更ファイル合計 | 19 ファイル |
+| 追加行数 | 358 行 |
+| 削除行数 | 392 行 |
+| テスト成功数 | 複数（RPC 除く） |
+| コンパイルエラー | 0 件 |
+
+---
+
+## ✅ チェックリスト
+
+- [x] epee モジュール構文エラー修復
+- [x] wallet/output.rs ドキュメント修復
+- [x] 全 16 README.md ファイル日本語化
+- [x] cargo test 成功確認
+- [x] Git コミット・プッシュ完了
+
+---
+
+## 🔗 参考情報
+
+### 既に日本語化済みのファイル（前回以前）
+- README.md (ルート)
+- Security.md
+- Contributing.md
+- Code of Conduct.md
+- Governance.md
+- MSRV Policy.md
+- `tests/verify-chain/src/main.rs` (行単位の文法説明付き)
+- ed25519, io, primitives, epee, rpc 等のソースコメント
+
+### バグバウンティプログラム
+- [Immunefi - monero-oxide](https://immunefi.com/bug-bounty/monero-oxide/information/)
+
+---
+
+**セッション終了**: 2025年11月28日
+**ステータス**: ✅ 全作業完了、テスト成功、リモートプッシュ済み
+
+https://monero-oxide.github.io/monero-oxide/monero_wallet/index.html
+
+https://github.com/monero-oxide/monero-oxide?utm_source=immunefi
+

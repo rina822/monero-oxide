@@ -1,14 +1,13 @@
-# Media
+# メディア
 
-This folder contains monero-oxide's logo, a combination of the [Monero logo](
+このフォルダには monero-oxide のロゴが含まれています。[Monero ロゴ](
   https://www.getmonero.org/press-kit
-) and Rust's unofficial mascot, [Ferris](https://rustacean.net). It was
-originally designed by VOSTOEMISIO for monero-oxide's use.
+) と Rust の非公式マスコット [Ferris](https://rustacean.net) の組み合わせです。もともと VOSTOEMISIO によって monero-oxide のために設計されました。
 
-The Monero logo is [licensed under the CC BY-SA 4.0](
+Monero ロゴは [CC BY-SA 4.0 でライセンス](
   https://www.getmonero.org/legal/copyright
-) while Ferris is [licensed under the CC0 1.0](https://rustacean.net).
+) されており、Ferris は [CC0 1.0 でライセンス](https://rustacean.net) されています。
 
-Our logo is licensed under the [CC BY-SA 4.0](
+当社のロゴは [CC BY-SA 4.0](
   https://creativecommons.org/licenses/by-sa/4.0/
-) accordingly.
+) の下でライセンスされています。

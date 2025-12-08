@@ -10,13 +10,8 @@ Monero プロトコルで定義される CLSAG（可鎖接可能リング署名�
 このライブラリは、デフォルトで有効な `std` 機能を無効にすることで、no-std 環境下で利用可能です。
 disabled.
 
-### Cargo Features
+### Cargo 機能
 
-- `std` (on by default): Enables `std` (and with it, more efficient internal
-  implementations).
-- `compile-time-generators` (on by default): Derives (expansions of) generators
-  at compile-time so they don't need to be derived at runtime. This is
-  recommended if program size doesn't need to be kept minimal.
-- `multisig`: Provides a FROST-inspired threshold multisignature algorithm for
-  use. This functionality is not covered by SemVer, except along minor
-  versions.
+- `std` (デフォルト有効): `std` を有効にし、より効率的な内部実装を使用します。
+- `compile-time-generators` (デフォルト有効): ジェネレータをコンパイル時に導出し、実行時の導出を不要にします。プログラムサイズを最小限に保つ必要がない場合に推奨されます。
+- `multisig`: FROST インスパイアの閾値マルチシグアルゴリズムを提供します。この機能は SemVer でカバーされていません（マイナーバージョンに沿って）。
